@@ -1,47 +1,178 @@
-import { ScrollView, Text, View } from "react-native";
-import { AgapHeader } from "../components/common/AgapHeader";
-import { AgapCard } from "../components/common/AgapCard";
-import { ScreenContainer } from "../components/common/ScreenContainer";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ScrollView, Text, TextInput, View } from "react-native";
 import { SleepTrendBars } from "../components/charts/SleepTrendBars";
+import { AgapButton } from "../components/common/AgapButton";
+import { AgapCard } from "../components/common/AgapCard";
+import { AgapHeader } from "../components/common/AgapHeader";
+import { EmptyState } from "../components/common/EmptyState";
+import { ErrorState } from "../components/common/ErrorState";
+import { LoadingState } from "../components/common/LoadingState";
+import { ScreenContainer } from "../components/common/ScreenContainer";
 import { ChatBubble } from "../components/insight/ChatBubble";
 import { QuickPromptChip } from "../components/insight/QuickPromptChip";
+import { useDashboard } from "../hooks/useDashboard";
+import { useInsights } from "../hooks/useInsights";
 
 export function InsightChatScreen() {
+  const {
+    messages,
+    isStreaming,
+    isLoadingContext,
+    error,
+    selectedSessionId,
+    suggestions,
+    sendMessage,
+    resetChat,
+  } = useInsights();
+  const { dashboard } = useDashboard();
+  const [draft, setDraft] = useState("");
+  const [activeSuggestionId, setActiveSuggestionId] = useState<string | null>(
+    null,
+  );
+  const messageScrollRef = useRef<ScrollView | null>(null);
+
+  const trendValues = useMemo(
+    () =>
+      dashboard?.trends.map((item) => Math.round(item.avg_breathing_rate)) ??
+      [],
+    [dashboard?.trends],
+  );
+
+  useEffect(() => {
+    messageScrollRef.current?.scrollToEnd({ animated: true });
+  }, [messages.length]);
+
+  const handleSend = useCallback(async () => {
+    const text = draft.trim();
+    if (!text || isStreaming) {
+      return;
+    }
+
+    setDraft("");
+    await sendMessage(text);
+    setActiveSuggestionId(null);
+  }, [draft, isStreaming, sendMessage]);
+
+  const handleSuggestionPress = useCallback(
+    async (suggestionId: string, prompt: string) => {
+      if (isStreaming) {
+        return;
+      }
+      setActiveSuggestionId(suggestionId);
+      await sendMessage(prompt);
+      setActiveSuggestionId(null);
+    },
+    [isStreaming, sendMessage],
+  );
+
   return (
     <ScreenContainer>
-      <AgapHeader title="AgapAI" subtitle="Live coaching session" />
+      <AgapHeader
+        title="AgapAI"
+        subtitle={
+          selectedSessionId
+            ? `Live coaching for ${selectedSessionId}`
+            : "Live coaching session"
+        }
+      />
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
-        <Text className="text-3xl font-semibold text-[#EFF6FF]">Morning Reflection</Text>
+      {isLoadingContext ? (
+        <LoadingState label="Preparing your chat context..." />
+      ) : null}
+
+      {!isLoadingContext && !selectedSessionId ? (
+        <EmptyState
+          title="No session context"
+          description="Record at least one session to unlock personalized insight chat."
+        />
+      ) : null}
+
+      <ScrollView
+        ref={messageScrollRef}
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text className="text-3xl font-semibold text-[#EFF6FF]">
+          Morning Reflection
+        </Text>
         <Text className="mt-2 text-sm leading-6 text-[#A9C0E2]">
-          Analyzing your circadian rhythm and deep sleep efficiency.
+          Ask follow-up questions to get deeper recommendations from your latest
+          session.
         </Text>
 
+        {error ? <ErrorState message={error.message} /> : null}
+
         <View className="mt-5">
-          <ChatBubble
-            role="assistant"
-            message="Good morning. Looking at your data from the last 7 days, your Deep Sleep Phase improved by 4.2%, with 15% higher consistency than your baseline."
-          />
+          {messages.map((message) => (
+            <ChatBubble
+              key={message.id}
+              role={message.role}
+              message={message.content}
+              createdAt={message.createdAt}
+              sections={message.sections}
+              isError={message.isError}
+            />
+          ))}
         </View>
 
         <View className="mb-4 mt-1">
-          <SleepTrendBars />
+          <SleepTrendBars
+            values={trendValues.length ? trendValues : undefined}
+            subtitle="Recent breathing trend used for contextual coaching"
+          />
         </View>
 
-        <ChatBubble
-          role="user"
-          message="That is great to hear. Can you give me one tip to stay on this track tonight?"
-        />
+        <ScrollView
+          horizontal
+          className="mb-3 mt-2"
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingRight: 8 }}
+        >
+          {suggestions.map((suggestion) => (
+            <QuickPromptChip
+              key={suggestion.id}
+              label={suggestion.label}
+              isActive={activeSuggestionId === suggestion.id}
+              onPress={() =>
+                void handleSuggestionPress(suggestion.id, suggestion.prompt)
+              }
+            />
+          ))}
+        </ScrollView>
 
-        <View className="mb-3 mt-2 flex-row">
-          <QuickPromptChip label="Analyze last night" />
-          <QuickPromptChip label="Tips for deep sleep" />
-          <QuickPromptChip label="Compare sessions" />
-        </View>
-
-        <AgapCard className="rounded-full px-4 py-3">
-          <Text className="text-sm text-[#7F98C0]">Ask your sleep coach...</Text>
+        <AgapCard className="mb-2 rounded-2xl px-3 py-2">
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            placeholder="Ask your sleep coach..."
+            placeholderTextColor="#7F98C0"
+            multiline
+            numberOfLines={2}
+            textAlignVertical="top"
+            className="min-h-[52px] text-sm text-[#DCEBFF]"
+          />
         </AgapCard>
+
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <AgapButton
+              title={isStreaming ? "Thinking..." : "Send"}
+              isLoading={isStreaming}
+              disabled={!draft.trim()}
+              onPress={() => void handleSend()}
+            />
+          </View>
+          <View className="flex-1">
+            <AgapButton
+              title="Clear"
+              variant="secondary"
+              disabled={isStreaming}
+              onPress={resetChat}
+            />
+          </View>
+        </View>
       </ScrollView>
     </ScreenContainer>
   );

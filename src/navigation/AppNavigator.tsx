@@ -1,13 +1,13 @@
-import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import { HomeDashboardScreen } from "../screens/HomeDashboardScreen";
-import { SessionHistoryScreen } from "../screens/SessionHistoryScreen";
-import { SessionDetailScreen } from "../screens/SessionDetailScreen";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { DefaultTheme, NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AdvancedAnalysisInputScreen } from "../screens/AdvancedAnalysisInputScreen";
 import { AdvancedAnalysisLoadingScreen } from "../screens/AdvancedAnalysisLoadingScreen";
+import { HomeDashboardScreen } from "../screens/HomeDashboardScreen";
 import { InsightChatScreen } from "../screens/InsightChatScreen";
+import { SessionDetailScreen } from "../screens/SessionDetailScreen";
+import { SessionHistoryScreen } from "../screens/SessionHistoryScreen";
 import type { MainTabParamList, RootStackParamList } from "./types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

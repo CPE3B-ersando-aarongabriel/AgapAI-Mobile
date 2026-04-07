@@ -1,19 +1,33 @@
-import { View, Text } from "react-native";
+import { Text, View } from "react-native";
 
-const bars = [36, 44, 39, 57, 48, 63];
+type SleepTrendBarsProps = {
+  values?: number[];
+  subtitle?: string;
+};
 
-export function SleepTrendBars() {
+const defaultValues = [36, 44, 39, 57, 48, 63];
+
+export function SleepTrendBars({
+  values = defaultValues,
+  subtitle = "Consistency is key. Your cadence remains stable.",
+}: SleepTrendBarsProps) {
+  const maxValue = Math.max(...values, 1);
+
   return (
     <View className="rounded-2xl border border-[#2B4267] bg-[#10264C] p-4">
       <Text className="text-[11px] uppercase tracking-[1px] text-[#89A4CB]">
         Sleep Trend Summary
       </Text>
       <View className="mt-3 flex-row items-end justify-between">
-        {bars.map((height, index) => (
-          <View key={index} className="w-[13%] rounded-t-md bg-[#6B9FEA]" style={{ height }} />
+        {values.map((value, index) => (
+          <View
+            key={index}
+            className="w-[13%] rounded-t-md bg-[#6B9FEA]"
+            style={{ height: Math.max(12, (value / maxValue) * 64) }}
+          />
         ))}
       </View>
-      <Text className="mt-2 text-xs text-[#9FB5D6]">Consistency is key. Your cadence remains stable.</Text>
+      <Text className="mt-2 text-xs text-[#9FB5D6]">{subtitle}</Text>
     </View>
   );
 }

@@ -1,57 +1,51 @@
 import { useCallback, useEffect, useState } from "react";
 import { toAppError } from "../services/api/errors";
-import { getSessions } from "../services/api/sessionService";
+import { getSessionById } from "../services/api/sessionService";
 import type { AppError } from "../types/api";
 import type { SessionRecord } from "../types/session";
 
-export type UseSessionsOptions = {
-  limit?: number;
-  deviceId?: string;
-};
-
-export type UseSessionsResult = {
-  sessions: SessionRecord[];
-  total: number;
+export type UseSessionDetailResult = {
+  session: SessionRecord | null;
   isLoading: boolean;
   error: AppError | null;
   refresh: () => Promise<void>;
 };
 
-export function useSessions(
-  options: UseSessionsOptions = {},
-): UseSessionsResult {
-  const [sessions, setSessions] = useState<SessionRecord[]>([]);
-  const [total, setTotal] = useState(0);
+export function useSessionDetail(
+  sessionId: string | null | undefined,
+): UseSessionDetailResult {
+  const [session, setSession] = useState<SessionRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<AppError | null>(null);
 
   const refresh = useCallback(async () => {
+    if (!sessionId) {
+      setSession(null);
+      setError({ message: "No session selected." });
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await getSessions({
-        limit: options.limit ?? 20,
-        skip: 0,
-        device_id: options.deviceId?.trim() || undefined,
-      });
-
-      setSessions(response.sessions);
-      setTotal(response.total);
+      const response = await getSessionById(sessionId);
+      setSession(response);
     } catch (err) {
       setError(toAppError(err));
+      setSession(null);
     } finally {
       setIsLoading(false);
     }
-  }, [options.deviceId, options.limit]);
+  }, [sessionId]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
   return {
-    sessions,
-    total,
+    session,
     isLoading,
     error,
     refresh,

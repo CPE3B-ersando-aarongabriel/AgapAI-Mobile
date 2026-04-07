@@ -1,15 +1,17 @@
+import { LinearGradient } from "expo-linear-gradient";
 import type { PropsWithChildren } from "react";
 import { ScrollView, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type ScreenContainerProps = PropsWithChildren<{
   scrollable?: boolean;
+  contentClassName?: string;
 }>;
 
 export function ScreenContainer({
   children,
   scrollable = false,
+  contentClassName = "",
 }: ScreenContainerProps) {
   return (
     <LinearGradient
@@ -23,12 +25,12 @@ export function ScreenContainer({
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 32 }}
-            className="px-5"
+            className={`px-5 ${contentClassName}`.trim()}
           >
             {children}
           </ScrollView>
         ) : (
-          <View className="flex-1 px-5">{children}</View>
+          <View className={`flex-1 px-5 ${contentClassName}`.trim()}>{children}</View>
         )}
       </SafeAreaView>
     </LinearGradient>
