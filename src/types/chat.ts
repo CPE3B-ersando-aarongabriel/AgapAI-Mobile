@@ -28,10 +28,14 @@ export type InsightChatResponse = {
   question: string;
   answer: string;
   context: {
-    mode?: string;
-    session_id?: string | null;
-    device_id?: string | null;
-    [key: string]: unknown;
+    mode: "generic" | "device" | "session" | string;
+    device_id: string | null;
+    session_id: string | null;
+    latest_session_id: string | null;
+    sessions_considered: number;
+    has_pre_analysis: boolean;
+    has_advanced_analysis: boolean;
+    has_dashboard_context: boolean;
   };
   ai_used: boolean;
   grounded: boolean;

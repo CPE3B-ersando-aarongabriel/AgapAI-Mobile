@@ -1,6 +1,11 @@
 export type RiskLevel = "low" | "medium" | "high" | string;
 
-export type SessionStatus = "active" | "ended" | "completed" | string;
+export type SessionStatus =
+  | "started"
+  | "active"
+  | "ended"
+  | "completed"
+  | string;
 
 export type SessionStartRequest = {
   device_id: string;
@@ -11,19 +16,52 @@ export type SessionStartRequest = {
 export type SessionStartResponse = {
   session_id: string;
   device_id: string;
-  status: SessionStatus;
+  status: "started" | SessionStatus;
   started_at: string;
 };
 
-export type SessionDataRequest = {
-  session_id: string;
-  breathing_rate: number;
-  snore_level: number;
+export type SessionChunkSample = {
+  recorded_at: string;
+  mic_raw: number;
+  mic_rms: number;
+  mic_peak: number;
   temperature: number;
   humidity: number;
-  movement_level?: number;
-  presence_detected?: boolean;
-  recorded_at?: string;
+  breathing_rate: number;
+  movement_level: number;
+  presence_detected: boolean;
+};
+
+export type SessionChunkRequest = {
+  session_id: string;
+  chunk_id?: string | null;
+  samples: SessionChunkSample[];
+};
+
+export type SessionChunkResponse = {
+  session_id: string;
+  status: "chunk_received" | SessionStatus;
+  received_count: number;
+  total_samples: number;
+  last_recorded_at: string | null;
+};
+
+export type SessionEndSummaryPayload = {
+  sample_count: number;
+  average_amplitude: number;
+  rms_amplitude: number;
+  peak_intensity: number;
+  snore_event_count: number;
+  snore_score: number;
+  average_breathing_rate: number;
+  average_temperature: number;
+  average_humidity: number;
+};
+
+export type SessionEndRequest = {
+  session_id: string;
+  ended_at?: string;
+  summary?: SessionEndSummaryPayload;
 };
 
 export type BreathingPattern = {
@@ -41,6 +79,7 @@ export type PreAnalysis = {
 };
 
 export type SessionSummaryMetrics = {
+  snore_score?: number;
   average_breathing_rate?: number;
   average_snore_level?: number;
   average_temperature?: number;
@@ -53,8 +92,11 @@ export type SessionSummaryMetrics = {
   [key: string]: unknown;
 };
 
-export type SessionDataResponse = {
+export type SessionEndResponse = {
   session_id: string;
+  status: "ended" | SessionStatus;
+  ended_at: string;
+  final_summary: SessionSummaryMetrics;
   recommendations: string[];
   breathing_pattern: BreathingPattern;
   pre_analysis: PreAnalysis;
@@ -80,6 +122,24 @@ export type AdvancedAnalysisRecord = {
   confidence_note: string;
   generated_at: string;
   ai_used: boolean;
+};
+
+export type InsightHistoryEntry = {
+  question: string;
+  answer: string;
+  context?: {
+    mode?: string;
+    device_id?: string | null;
+    session_id?: string | null;
+    latest_session_id?: string | null;
+    sessions_considered?: number;
+    has_pre_analysis?: boolean;
+    has_advanced_analysis?: boolean;
+    has_dashboard_context?: boolean;
+  };
+  ai_used?: boolean;
+  grounded?: boolean;
+  generated_at?: string;
 };
 
 export type DeviceResponse = {
@@ -211,6 +271,7 @@ export type SessionSamplesPage = {
 export type SessionRecord = {
   session_id: string;
   device_id: string;
+  status?: SessionStatus;
   started_at: string;
   updated_at: string;
   ended_at: string | null;
@@ -218,6 +279,8 @@ export type SessionRecord = {
   latest_pre_analysis: PreAnalysis | null;
   latest_device_response: DeviceResponse | null;
   advanced_analysis: AdvancedAnalysisRecord | null;
+  insight_history?: InsightHistoryEntry[] | null;
+  compatibility_projection?: Record<string, unknown> | null;
 };
 
 export type SessionsResponse = {

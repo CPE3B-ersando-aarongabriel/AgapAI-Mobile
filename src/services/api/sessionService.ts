@@ -8,9 +8,12 @@ import type {
   DeviceResponse,
   DeviceSessions,
   DeviceSessionsResponse,
+  InsightHistoryEntry,
   PreAnalysis,
-  SessionDataRequest,
-  SessionDataResponse,
+  SessionChunkRequest,
+  SessionChunkResponse,
+  SessionEndRequest,
+  SessionEndResponse,
   SessionLiveStatus,
   SessionLiveStatusResponse,
   SessionRecord,
@@ -128,6 +131,19 @@ function sanitizeSessionRecord(session: SessionRecord): SessionRecord {
       session.latest_device_response,
     ),
     advanced_analysis: sanitizeAdvanced(session.advanced_analysis),
+    insight_history:
+      session.insight_history?.map((item) => sanitizeInsightHistoryEntry(item))
+      ?? null,
+  };
+}
+
+function sanitizeInsightHistoryEntry(
+  item: InsightHistoryEntry,
+): InsightHistoryEntry {
+  return {
+    ...item,
+    question: cleanBackendText(item.question),
+    answer: cleanBackendText(item.answer),
   };
 }
 
@@ -141,11 +157,22 @@ export async function startSession(
   return data;
 }
 
-export async function submitSessionData(
-  payload: SessionDataRequest,
-): Promise<SessionDataResponse> {
-  const { data } = await apiClient.post<SessionDataResponse>(
-    apiEndpoints.sessionData,
+export async function submitSessionChunk(
+  payload: SessionChunkRequest,
+): Promise<SessionChunkResponse> {
+  const { data } = await apiClient.post<SessionChunkResponse>(
+    apiEndpoints.sessionChunk,
+    payload,
+  );
+
+  return data;
+}
+
+export async function endSession(
+  payload: SessionEndRequest,
+): Promise<SessionEndResponse> {
+  const { data } = await apiClient.post<SessionEndResponse>(
+    apiEndpoints.sessionEnd,
     payload,
   );
 

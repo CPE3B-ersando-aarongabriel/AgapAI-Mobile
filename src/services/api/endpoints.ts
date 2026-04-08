@@ -8,7 +8,6 @@ export const apiEndpoints = {
   sessionStart: "/api/session/start",
   sessionChunk: "/api/session/chunk",
   sessionEnd: "/api/session/end",
-  sessionData: "/api/session/data",
   sessionById: (sessionId: string) =>
     `/api/session/${encodeURIComponent(sessionId)}`,
   sessionLive: (sessionId: string) =>

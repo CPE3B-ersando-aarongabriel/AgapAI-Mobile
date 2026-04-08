@@ -8,7 +8,6 @@ import {
 import { AgapButton } from "../components/common/AgapButton";
 import { AgapCard } from "../components/common/AgapCard";
 import { AgapHeader } from "../components/common/AgapHeader";
-import { EmptyState } from "../components/common/EmptyState";
 import { ErrorState } from "../components/common/ErrorState";
 import { LoadingState } from "../components/common/LoadingState";
 import { ScreenContainer } from "../components/common/ScreenContainer";
@@ -107,13 +106,6 @@ export function InsightChatScreen() {
         <LoadingState label="Preparing your chat context..." />
       ) : null}
 
-      {!isLoadingContext && !selectedSessionId ? (
-        <EmptyState
-          title="No session context"
-          description="Record at least one session to unlock personalized insight chat."
-        />
-      ) : null}
-
       <ScrollView
         ref={messageScrollRef}
         className="flex-1"
@@ -125,9 +117,15 @@ export function InsightChatScreen() {
           Morning Reflection
         </Text>
         <Text className="mt-2 text-sm leading-6 text-[#A9C0E2]">
-          Ask follow-up questions to get deeper recommendations from your latest
-          session.
+          Ask follow-up questions for coaching insight grounded in your backend
+          session and dashboard data.
         </Text>
+
+        <AgapCard className="mt-3">
+          <Text className="text-xs leading-6 text-[#A8C0E5]">
+            Responses are coaching insight and not a medical diagnosis.
+          </Text>
+        </AgapCard>
 
         {error ? <ErrorState message={error.message} /> : null}
 
@@ -144,23 +142,27 @@ export function InsightChatScreen() {
           ))}
         </View>
 
-        <View className="mb-2 mt-1">
-          <AgapCard>
-            <Text className="text-[11px] uppercase tracking-[1px] text-[#8FAAD2]">
-              Coaching Trend Window
-            </Text>
-            <View className="mt-3 self-start">
-              <RangeSelector value={trendRange} onChange={setTrendRange} />
+        {trendValues.length ? (
+          <>
+            <View className="mb-2 mt-1">
+              <AgapCard>
+                <Text className="text-[11px] uppercase tracking-[1px] text-[#8FAAD2]">
+                  Coaching Trend Window
+                </Text>
+                <View className="mt-3 self-start">
+                  <RangeSelector value={trendRange} onChange={setTrendRange} />
+                </View>
+              </AgapCard>
             </View>
-          </AgapCard>
-        </View>
 
-        <TrendLineChart
-          title="Contextual Breathing Trend"
-          values={trendValues}
-          labels={trendLabels}
-          summary="This trend is used by the coach to ground responses in recent patterns."
-        />
+            <TrendLineChart
+              title="Contextual Breathing Trend"
+              values={trendValues}
+              labels={trendLabels}
+              summary="Backend dashboard trend used to ground coaching context."
+            />
+          </>
+        ) : null}
 
         <ScrollView
           horizontal

@@ -25,32 +25,6 @@ import type { SessionSummary } from "../types/session";
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type SessionRange = "recent" | "month" | "all";
 
-function estimateSessionScore(session: SessionSummary): number | undefined {
-  const metrics = session.summaryMetrics;
-  if (!metrics) {
-    return undefined;
-  }
-
-  const breathingRate = Number(metrics.average_breathing_rate ?? 14);
-  const snoreLevel = Number(metrics.average_snore_level ?? 0);
-  const snorePenalty = Math.min(45, snoreLevel * 4);
-  const breathingPenalty = Math.min(25, Math.abs(breathingRate - 14) * 2);
-  const riskPenalty =
-    session.latestPreAnalysis?.risk_level === "high"
-      ? 15
-      : session.latestPreAnalysis?.risk_level === "medium"
-        ? 7
-        : 0;
-
-  return Math.max(
-    0,
-    Math.min(
-      100,
-      Math.round(100 - snorePenalty - breathingPenalty - riskPenalty),
-    ),
-  );
-}
-
 function formatSessionDate(date: Date): string {
   const now = new Date();
   const diffDays = Math.floor(
@@ -69,17 +43,6 @@ function formatSessionDate(date: Date): string {
     day: "numeric",
     year: "numeric",
   });
-}
-
-function getTitleByRiskLevel(riskLevel: string | null | undefined): string {
-  const level = (riskLevel ?? "").toLowerCase();
-  if (level === "low") {
-    return "Quiet & Restorative";
-  }
-  if (level === "high") {
-    return "Needs Attention";
-  }
-  return "Slightly Interrupted";
 }
 
 export function SessionHistoryScreen() {
@@ -139,8 +102,18 @@ export function SessionHistoryScreen() {
   }, [sessionRange, sessions]);
 
   const renderItem = ({ item }: { item: SessionSummary }) => {
-    const score = estimateSessionScore(item);
     const isSelected = selectedSessionId === item.sessionId;
+    const risk = item.latestPreAnalysis?.risk_level;
+    const summaryText =
+      item.latestPreAnalysis?.summary ??
+      item.latestDeviceResponse?.pre_analysis?.summary ??
+      "No summary available yet for this session.";
+    const sessionTitle = `Session ${item.sessionId.slice(-8)}`;
+    const statusLabel = isSelected
+      ? `Selected • ${item.status}`
+      : risk
+        ? `${item.status} • Risk ${risk}`
+        : item.status;
 
     return (
       <Pressable
@@ -151,17 +124,10 @@ export function SessionHistoryScreen() {
       >
         <SessionHistoryCard
           date={formatSessionDate(item.startedAt)}
-          title={getTitleByRiskLevel(item.latestPreAnalysis?.risk_level)}
-          score={score}
-          note={
-            item.latestPreAnalysis?.summary ||
-            "No pre-analysis summary was generated for this session yet."
-          }
-          statusLabel={
-            isSelected
-              ? `Selected • ${item.latestPreAnalysis?.risk_level ?? "recorded"}`
-              : (item.latestPreAnalysis?.risk_level ?? "Recorded")
-          }
+          title={sessionTitle}
+          rightLabel={`Samples ${item.sampleCount}`}
+          note={summaryText}
+          statusLabel={statusLabel}
         />
       </Pressable>
     );

@@ -46,10 +46,7 @@ export function ProfileScreen() {
           label="Selected Session"
           value={selectedSessionId ?? "None selected"}
         />
-        <Row
-          label="Device Filter"
-          value={sessionDeviceFilter || "Not set"}
-        />
+        <Row label="Device Filter" value={sessionDeviceFilter || "Not set"} />
       </AgapCard>
 
       <AgapCard className="mt-4">
@@ -79,8 +76,8 @@ export function ProfileScreen() {
           Accessibility Defaults
         </Text>
         <Text className="mt-2 text-sm leading-6 text-[#A8C0E5]">
-          Buttons maintain larger touch targets, charts use high-contrast colors,
-          and content remains readable with dynamic text sizing.
+          Buttons maintain larger touch targets, charts use high-contrast
+          colors, and content remains readable with dynamic text sizing.
         </Text>
         <View className="mt-4">
           <AgapButton

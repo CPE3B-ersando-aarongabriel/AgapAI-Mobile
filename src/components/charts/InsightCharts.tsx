@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Circle, G, Path } from "react-native-svg";
 import { AgapCard } from "../common/AgapCard";
@@ -45,6 +45,7 @@ type TrendLineChartProps = {
   title: string;
   values: number[];
   labels: string[];
+  xValues?: number[];
   summary: string;
   annotation?: string;
 };
@@ -53,23 +54,40 @@ export function TrendLineChart({
   title,
   values,
   labels,
+  xValues,
   summary,
   annotation,
 }: TrendLineChartProps) {
   const [activeIndex, setActiveIndex] = useState(values.length - 1);
   const max = Math.max(...values, 1);
 
+  useEffect(() => {
+    setActiveIndex(values.length > 0 ? values.length - 1 : 0);
+  }, [values]);
+
   const points = useMemo(() => {
     if (!values.length) {
       return [] as { x: number; y: number; value: number; label: string }[];
     }
 
+    const hasTimeAxis =
+      Array.isArray(xValues) &&
+      xValues.length === values.length &&
+      xValues.every((value) => Number.isFinite(value));
+
+    const minX = hasTimeAxis ? Math.min(...xValues) : 0;
+    const maxX = hasTimeAxis ? Math.max(...xValues) : 1;
+    const xRange = Math.max(maxX - minX, 1);
+
     return values.map((value, index) => {
-      const x = 10 + (index / Math.max(values.length - 1, 1)) * 230;
+      const xPosition = hasTimeAxis
+        ? ((xValues[index] - minX) / xRange) * 230
+        : (index / Math.max(values.length - 1, 1)) * 230;
+      const x = 10 + xPosition;
       const y = 90 - (value / max) * 72;
       return { x, y, value, label: labels[index] ?? `${index + 1}` };
     });
-  }, [labels, max, values]);
+  }, [labels, max, values, xValues]);
 
   const activePoint = points[activeIndex] ?? null;
   const linePath = points
@@ -190,7 +208,12 @@ type SleepStagePieChartProps = {
   summary: string;
 };
 
-function polarToCartesian(cx: number, cy: number, radius: number, angle: number) {
+function polarToCartesian(
+  cx: number,
+  cy: number,
+  radius: number,
+  angle: number,
+) {
   const radians = ((angle - 90) * Math.PI) / 180;
   return {
     x: cx + radius * Math.cos(radians),
@@ -340,7 +363,10 @@ export function SleepStageStackedChart({
               >
                 <View style={{ height: remHeight }} className="bg-[#8B86F4]" />
                 <View style={{ height: deepHeight }} className="bg-[#4B79BF]" />
-                <View style={{ height: lightHeight }} className="bg-[#A7C6ED]" />
+                <View
+                  style={{ height: lightHeight }}
+                  className="bg-[#A7C6ED]"
+                />
               </View>
               <Text className="mt-2 text-[10px] uppercase text-[#8FAAD2]">
                 {item.label}
@@ -356,9 +382,12 @@ export function SleepStageStackedChart({
       </View>
       {active ? (
         <View className="mt-3 rounded-2xl border border-[#27436E] bg-[#10294F] px-3 py-2">
-          <Text className="text-xs font-semibold text-[#CFE1FF]">{active.label}</Text>
+          <Text className="text-xs font-semibold text-[#CFE1FF]">
+            {active.label}
+          </Text>
           <Text className="mt-1 text-xs text-[#9EB8DE]">
-            Light {active.light.toFixed(1)}h • Deep {active.deep.toFixed(1)}h • REM {active.rem.toFixed(1)}h
+            Light {active.light.toFixed(1)}h • Deep {active.deep.toFixed(1)}h •
+            REM {active.rem.toFixed(1)}h
           </Text>
         </View>
       ) : null}
@@ -370,7 +399,10 @@ export function SleepStageStackedChart({
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <View className="flex-row items-center gap-1">
-      <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+      <View
+        className="h-2.5 w-2.5 rounded-full"
+        style={{ backgroundColor: color }}
+      />
       <Text className="text-[11px] text-[#9FB5D6]">{label}</Text>
     </View>
   );

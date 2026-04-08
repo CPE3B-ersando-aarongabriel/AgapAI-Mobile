@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getDashboard } from "../services/api/dashboardService";
 import { toAppError } from "../services/api/errors";
 import {
+  getSessionById,
   getDeviceSessions,
   requestInsightChat,
 } from "../services/api/sessionService";
@@ -11,36 +12,6 @@ import type { InsightMessage, InsightPromptSuggestion } from "../types/chat";
 
 function createId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-}
-
-function inferFocusAreas(prompt: string): string[] {
-  const normalized = prompt.toLowerCase();
-  const areas: string[] = [];
-
-  if (normalized.includes("breath")) {
-    areas.push("breathing");
-  }
-  if (normalized.includes("snore")) {
-    areas.push("snoring");
-  }
-  if (normalized.includes("posture") || normalized.includes("position")) {
-    areas.push("sleep_posture");
-  }
-  if (
-    normalized.includes("room") ||
-    normalized.includes("temp") ||
-    normalized.includes("humidity")
-  ) {
-    areas.push("room_comfort");
-  }
-  if (normalized.includes("fatigue") || normalized.includes("tired")) {
-    areas.push("fatigue");
-  }
-  if (normalized.includes("bedtime") || normalized.includes("routine")) {
-    areas.push("bedtime_consistency");
-  }
-
-  return areas.length ? areas : ["breathing", "bedtime_consistency"];
 }
 
 const defaultSuggestions: InsightPromptSuggestion[] = [
@@ -84,16 +55,47 @@ export function useInsights(): UseInsightsResult {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
 
-  useEffect(() => {
-    setMessages([
-      {
-        id: createId(),
-        role: "assistant",
-        content:
-          "I am ready to help using your recent session data. Ask me about breathing, snoring, room comfort, or bedtime rhythm.",
-        createdAt: new Date().toISOString(),
-      },
-    ]);
+  const hydrateStoredInsightHistory = useCallback(async (sessionId: string) => {
+    try {
+      const fullSession = await getSessionById(sessionId);
+      const history = fullSession.insight_history ?? [];
+
+      const hydratedMessages: InsightMessage[] = history.flatMap((entry) => {
+        const createdAt = entry.generated_at ?? new Date().toISOString();
+        const userMessage: InsightMessage = {
+          id: createId(),
+          role: "user",
+          content: entry.question,
+          createdAt,
+        };
+
+        const assistantMessage: InsightMessage = {
+          id: createId(),
+          role: "assistant",
+          content: entry.answer,
+          createdAt,
+          sourceSessionId: entry.context?.session_id ?? undefined,
+          sections: [
+            {
+              title: "Context",
+              items: [
+                `Mode: ${entry.context?.mode ?? "unknown"}`,
+                `Type: coaching insight`,
+                `AI used: ${entry.ai_used ? "yes" : "no"}`,
+                `Grounded: ${entry.grounded ? "yes" : "no"}`,
+              ],
+            },
+          ],
+        };
+
+        return [userMessage, assistantMessage];
+      });
+
+      setMessages(hydratedMessages);
+    } catch {
+      // Not blocking: if full session lookup fails, continue with empty history.
+      setMessages([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -104,28 +106,46 @@ export function useInsights(): UseInsightsResult {
       try {
         const dashboard = await getDashboard();
         const firstDeviceId = dashboard.latest_highlights[0]?.device_id ?? null;
+        const latestSessionId = dashboard.latest_highlights[0]?.session_id ?? null;
         setSelectedDeviceId(firstDeviceId);
+
+        const resolvedSessionId =
+          selectedSessionFromStore ?? latestSessionId ?? null;
 
         if (selectedSessionFromStore) {
           setSelectedSessionId(selectedSessionFromStore);
+          await hydrateStoredInsightHistory(selectedSessionFromStore);
         } else if (firstDeviceId) {
           const sessions = await getDeviceSessions(firstDeviceId, {
             limit: 1,
             skip: 0,
           });
-          setSelectedSessionId(sessions.sessions[0]?.sessionId ?? null);
+          const firstSessionId = sessions.sessions[0]?.sessionId ?? resolvedSessionId;
+          setSelectedSessionId(firstSessionId ?? null);
+
+          if (firstSessionId) {
+            await hydrateStoredInsightHistory(firstSessionId);
+          } else {
+            setMessages([]);
+          }
         } else {
-          setSelectedSessionId(null);
+          setSelectedSessionId(resolvedSessionId);
+          if (resolvedSessionId) {
+            await hydrateStoredInsightHistory(resolvedSessionId);
+          } else {
+            setMessages([]);
+          }
         }
       } catch (err) {
         setError(toAppError(err));
+        setMessages([]);
       } finally {
         setIsLoadingContext(false);
       }
     };
 
     void loadContext();
-  }, [selectedSessionFromStore]);
+  }, [hydrateStoredInsightHistory, selectedSessionFromStore]);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -144,27 +164,11 @@ export function useInsights(): UseInsightsResult {
       setMessages((current) => [...current, userMessage]);
       setError(null);
 
-      if (!selectedSessionId && !selectedDeviceId) {
-        setMessages((current) => [
-          ...current,
-          {
-            id: createId(),
-            role: "assistant",
-            content:
-              "No session context is available yet. Record at least one session from your device to unlock personalized insights.",
-            createdAt: new Date().toISOString(),
-            isError: true,
-          },
-        ]);
-        return;
-      }
-
       setIsStreaming(true);
 
       try {
-        const focusAreas = inferFocusAreas(trimmed);
         const response = await requestInsightChat({
-          question: `${trimmed}${focusAreas.length ? `\n\nFocus areas: ${focusAreas.join(", ")}` : ""}`,
+          question: trimmed,
           session_id: selectedSessionId,
           device_id: selectedDeviceId,
           store_conversation: true,
@@ -182,6 +186,7 @@ export function useInsights(): UseInsightsResult {
               title: "Context",
               items: [
                 `Mode: ${response.context.mode ?? "unknown"}`,
+                `Type: coaching insight`,
                 `AI used: ${response.ai_used ? "yes" : "no"}`,
                 `Grounded: ${response.grounded ? "yes" : "no"}`,
               ],
@@ -211,15 +216,7 @@ export function useInsights(): UseInsightsResult {
   );
 
   const resetChat = useCallback(() => {
-    setMessages([
-      {
-        id: createId(),
-        role: "assistant",
-        content:
-          "Chat cleared. Ask for a fresh analysis whenever you are ready.",
-        createdAt: new Date().toISOString(),
-      },
-    ]);
+    setMessages([]);
     setError(null);
   }, []);
 

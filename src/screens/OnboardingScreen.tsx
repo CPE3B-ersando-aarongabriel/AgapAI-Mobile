@@ -20,17 +20,20 @@ const steps: StepItem[] = [
   {
     id: "device",
     title: "Connect Device",
-    detail: "Ensure your ESP32 session source is powered and on the same network.",
+    detail:
+      "Ensure your ESP32 session source is powered and on the same network.",
   },
   {
     id: "session",
     title: "Capture First Session",
-    detail: "Record one full night so AgapAI can establish your baseline pattern.",
+    detail:
+      "Record one full night so AgapAI can establish your baseline pattern.",
   },
   {
     id: "review",
     title: "Review Dashboard",
-    detail: "Check breathing stability and snore trends in the Home and Coach tabs.",
+    detail:
+      "Check breathing stability and snore trends in the Home and Coach tabs.",
   },
   {
     id: "coach",
