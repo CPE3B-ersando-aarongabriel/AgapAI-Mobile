@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getDashboard } from "../services/api/dashboardService";
 import { toAppError } from "../services/api/errors";
 import {
-  getSessionById,
   getDeviceSessions,
+  getSessionById,
   requestInsightChat,
 } from "../services/api/sessionService";
 import { useAppStore } from "../store/appStore";
@@ -42,6 +42,7 @@ export type UseInsightsResult = {
   suggestions: InsightPromptSuggestion[];
   sendMessage: (text: string) => Promise<void>;
   resetChat: () => void;
+  reloadContext: () => Promise<void>;
 };
 
 export function useInsights(): UseInsightsResult {
@@ -98,54 +99,56 @@ export function useInsights(): UseInsightsResult {
     }
   }, []);
 
-  useEffect(() => {
-    const loadContext = async () => {
-      setIsLoadingContext(true);
-      setError(null);
+  const reloadContext = useCallback(async () => {
+    setIsLoadingContext(true);
+    setError(null);
 
-      try {
-        const dashboard = await getDashboard();
-        const firstDeviceId = dashboard.latest_highlights[0]?.device_id ?? null;
-        const latestSessionId = dashboard.latest_highlights[0]?.session_id ?? null;
-        setSelectedDeviceId(firstDeviceId);
+    try {
+      const dashboard = await getDashboard();
+      const firstDeviceId = dashboard.latest_highlights[0]?.device_id ?? null;
+      const latestSessionId =
+        dashboard.latest_highlights[0]?.session_id ?? null;
+      setSelectedDeviceId(firstDeviceId);
 
-        const resolvedSessionId =
-          selectedSessionFromStore ?? latestSessionId ?? null;
+      const resolvedSessionId =
+        selectedSessionFromStore ?? latestSessionId ?? null;
 
-        if (selectedSessionFromStore) {
-          setSelectedSessionId(selectedSessionFromStore);
-          await hydrateStoredInsightHistory(selectedSessionFromStore);
-        } else if (firstDeviceId) {
-          const sessions = await getDeviceSessions(firstDeviceId, {
-            limit: 1,
-            skip: 0,
-          });
-          const firstSessionId = sessions.sessions[0]?.sessionId ?? resolvedSessionId;
-          setSelectedSessionId(firstSessionId ?? null);
+      if (selectedSessionFromStore) {
+        setSelectedSessionId(selectedSessionFromStore);
+        await hydrateStoredInsightHistory(selectedSessionFromStore);
+      } else if (firstDeviceId) {
+        const sessions = await getDeviceSessions(firstDeviceId, {
+          limit: 1,
+          skip: 0,
+        });
+        const firstSessionId =
+          sessions.sessions[0]?.sessionId ?? resolvedSessionId;
+        setSelectedSessionId(firstSessionId ?? null);
 
-          if (firstSessionId) {
-            await hydrateStoredInsightHistory(firstSessionId);
-          } else {
-            setMessages([]);
-          }
+        if (firstSessionId) {
+          await hydrateStoredInsightHistory(firstSessionId);
         } else {
-          setSelectedSessionId(resolvedSessionId);
-          if (resolvedSessionId) {
-            await hydrateStoredInsightHistory(resolvedSessionId);
-          } else {
-            setMessages([]);
-          }
+          setMessages([]);
         }
-      } catch (err) {
-        setError(toAppError(err));
-        setMessages([]);
-      } finally {
-        setIsLoadingContext(false);
+      } else {
+        setSelectedSessionId(resolvedSessionId);
+        if (resolvedSessionId) {
+          await hydrateStoredInsightHistory(resolvedSessionId);
+        } else {
+          setMessages([]);
+        }
       }
-    };
-
-    void loadContext();
+    } catch (err) {
+      setError(toAppError(err));
+      setMessages([]);
+    } finally {
+      setIsLoadingContext(false);
+    }
   }, [hydrateStoredInsightHistory, selectedSessionFromStore]);
+
+  useEffect(() => {
+    void reloadContext();
+  }, [reloadContext]);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -232,5 +235,6 @@ export function useInsights(): UseInsightsResult {
     suggestions,
     sendMessage,
     resetChat,
+    reloadContext,
   };
 }

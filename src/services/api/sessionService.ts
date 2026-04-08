@@ -1,38 +1,38 @@
 import type {
-  AdvancedAnalysisRequestPayload,
-  AdvancedAnalysisResponse,
+    AdvancedAnalysisRequestPayload,
+    AdvancedAnalysisResponse,
 } from "../../types/analysis";
 import type { InsightChatRequest, InsightChatResponse } from "../../types/chat";
 import type {
-  AdvancedAnalysisRecord,
-  DeviceResponse,
-  DeviceSessions,
-  DeviceSessionsResponse,
-  InsightHistoryEntry,
-  PreAnalysis,
-  SessionChunkRequest,
-  SessionChunkResponse,
-  SessionEndRequest,
-  SessionEndResponse,
-  SessionLiveStatus,
-  SessionLiveStatusResponse,
-  SessionRecord,
-  SessionSamplesPage,
-  SessionSamplesPageResponse,
-  SessionsResponse,
-  SessionStartRequest,
-  SessionStartResponse,
-  SessionSummary,
-  SessionSummaryResponse,
+    AdvancedAnalysisRecord,
+    DeviceResponse,
+    DeviceSessions,
+    DeviceSessionsResponse,
+    InsightHistoryEntry,
+    PreAnalysis,
+    SessionChunkRequest,
+    SessionChunkResponse,
+    SessionEndRequest,
+    SessionEndResponse,
+    SessionLiveStatus,
+    SessionLiveStatusResponse,
+    SessionRecord,
+    SessionSamplesPage,
+    SessionSamplesPageResponse,
+    SessionsResponse,
+    SessionStartRequest,
+    SessionStartResponse,
+    SessionSummary,
+    SessionSummaryResponse,
 } from "../../types/session";
 import { apiClient } from "./client";
 import { apiEndpoints } from "./endpoints";
 import { cleanBackendText } from "./errors";
 import {
-  mapDeviceSessions,
-  mapSessionLiveStatus,
-  mapSessionSamplesPage,
-  mapSessionSummary,
+    mapDeviceSessions,
+    mapSessionLiveStatus,
+    mapSessionSamplesPage,
+    mapSessionSummary,
 } from "./mappers";
 import { withGetRetry } from "./retry";
 

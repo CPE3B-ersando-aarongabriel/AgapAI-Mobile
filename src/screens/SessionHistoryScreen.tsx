@@ -2,13 +2,13 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Pressable,
+    RefreshControl,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { AgapButton } from "../components/common/AgapButton";
 import { AgapHeader } from "../components/common/AgapHeader";

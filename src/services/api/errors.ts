@@ -21,6 +21,22 @@ function getFallbackMessage(statusCode?: number): string {
   return "Something went wrong while contacting AgapAI backend.";
 }
 
+function isDatabaseUnavailableError(
+  statusCode: number | undefined,
+  code: string | undefined,
+  detail: string,
+): boolean {
+  if (statusCode !== 503) {
+    return false;
+  }
+
+  if (code?.toLowerCase() === "database_unavailable") {
+    return true;
+  }
+
+  return detail.toLowerCase().includes("database");
+}
+
 function parseValidationIssues(payload: unknown): string[] {
   if (!payload || typeof payload !== "object") {
     return [];
@@ -71,6 +87,11 @@ export function toAppError(error: unknown): AppError {
     typeof payload.timestamp === "string" ? payload.timestamp : undefined;
   const isNotFound = statusCode === 404 || payload.code === 404;
   const validationIssues = parseValidationIssues(error.response?.data);
+  const isDatabaseUnavailable = isDatabaseUnavailableError(
+    statusCode,
+    code,
+    detail,
+  );
 
   let message = detail || getFallbackMessage(statusCode);
 
@@ -80,6 +101,11 @@ export function toAppError(error: unknown): AppError {
 
   if (statusCode === 422 && validationIssues.length) {
     message = `Validation failed: ${validationIssues.join("; ")}`;
+  }
+
+  if (isDatabaseUnavailable) {
+    message =
+      "AgapAI backend database is temporarily unavailable. Please tap Try Again in a moment.";
   }
 
   return {

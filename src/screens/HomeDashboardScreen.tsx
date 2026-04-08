@@ -3,9 +3,9 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import {
-  type ChartRange,
-  RangeSelector,
-  TrendLineChart,
+    type ChartRange,
+    RangeSelector,
+    TrendLineChart,
 } from "../components/charts/InsightCharts";
 import { AgapButton } from "../components/common/AgapButton";
 import { AgapCard } from "../components/common/AgapCard";

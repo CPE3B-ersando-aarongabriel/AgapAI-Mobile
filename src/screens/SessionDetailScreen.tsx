@@ -1,16 +1,16 @@
 import type { RouteProp } from "@react-navigation/native";
 import {
-  useIsFocused,
-  useNavigation,
-  useRoute,
+    useIsFocused,
+    useNavigation,
+    useRoute,
 } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import {
-  RangeSelector,
-  TrendLineChart,
-  type ChartRange,
+    RangeSelector,
+    TrendLineChart,
+    type ChartRange,
 } from "../components/charts/InsightCharts";
 import { AgapButton } from "../components/common/AgapButton";
 import { AgapCard } from "../components/common/AgapCard";

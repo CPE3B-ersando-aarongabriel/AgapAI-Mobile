@@ -27,6 +27,7 @@ export function InsightChatScreen() {
     suggestions,
     sendMessage,
     resetChat,
+    reloadContext,
   } = useInsights();
   const { dashboard } = useDashboard();
   const [draft, setDraft] = useState("");
@@ -127,7 +128,12 @@ export function InsightChatScreen() {
           </Text>
         </AgapCard>
 
-        {error ? <ErrorState message={error.message} /> : null}
+        {error ? (
+          <ErrorState
+            message={error.message}
+            onRetry={() => void reloadContext()}
+          />
+        ) : null}
 
         <View className="mt-5">
           {messages.map((message) => (
