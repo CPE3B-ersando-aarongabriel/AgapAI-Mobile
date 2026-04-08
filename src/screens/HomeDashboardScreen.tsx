@@ -147,6 +147,17 @@ export function HomeDashboardScreen() {
               }
             />
           </View>
+
+          <View className="mt-3">
+            <AgapButton
+              title="Refresh Dashboard"
+              variant="secondary"
+              onPress={() => {
+                void refreshDashboard();
+                void refreshStatus();
+              }}
+            />
+          </View>
         </>
       ) : null}
     </ScreenContainer>

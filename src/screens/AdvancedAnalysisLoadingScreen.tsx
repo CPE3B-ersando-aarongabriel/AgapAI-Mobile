@@ -11,6 +11,7 @@ import { ScreenContainer } from "../components/common/ScreenContainer";
 import { SynthesisProgressCard } from "../components/loading/SynthesisProgressCard";
 import { useAdvancedAnalysis } from "../hooks/useAdvancedAnalysis";
 import type { RootStackParamList } from "../navigation/types";
+import type { AdvancedAnalysisRecord } from "../types/session";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type LoadingRoute = RouteProp<RootStackParamList, "AdvancedAnalysisLoading">;
@@ -30,6 +31,7 @@ export function AdvancedAnalysisLoadingScreen() {
   const [attempt, setAttempt] = useState(0);
   const [factIndex, setFactIndex] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [result, setResult] = useState<AdvancedAnalysisRecord | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -49,6 +51,7 @@ export function AdvancedAnalysisLoadingScreen() {
     const run = async () => {
       const result = await submit(sessionId, payload);
       if (active && result) {
+        setResult(result);
         setIsComplete(true);
       }
     };
@@ -130,6 +133,19 @@ export function AdvancedAnalysisLoadingScreen() {
 
         {isComplete ? (
           <View className="mt-6 w-full gap-3">
+            {result?.detailed_insights?.length ? (
+              <View className="rounded-2xl border border-[#2C446B] bg-[#10264B] p-4">
+                <Text className="text-[11px] uppercase tracking-[1px] text-[#8EA8CF]">
+                  Insight Preview
+                </Text>
+                {result.detailed_insights.slice(0, 2).map((item) => (
+                  <Text key={item} className="mt-2 text-sm text-[#D6E5FF]">
+                    • {item}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+
             <AgapButton
               title="View Session Results"
               onPress={() =>

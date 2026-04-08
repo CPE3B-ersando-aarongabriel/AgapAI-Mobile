@@ -19,31 +19,28 @@ import { ScreenContainer } from "../components/common/ScreenContainer";
 import { SessionHistoryCard } from "../components/session/SessionHistoryCard";
 import { useSessionHistory } from "../hooks/useSessionHistory";
 import type { RootStackParamList } from "../navigation/types";
-import type { SessionRecord } from "../types/session";
+import { useAppStore } from "../store/appStore";
+import type { SessionSummary } from "../types/session";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-function getLastSensorEvent(session: SessionRecord) {
-  return session.sensor_events.length
-    ? session.sensor_events[session.sensor_events.length - 1]
-    : null;
-}
-
-function estimateSessionScore(session: SessionRecord): number | undefined {
-  const lastEvent = getLastSensorEvent(session);
-  if (!lastEvent) {
+function estimateSessionScore(session: SessionSummary): number | undefined {
+  const metrics = session.summaryMetrics;
+  if (!metrics) {
     return undefined;
   }
 
-  const snorePenalty = Math.min(45, lastEvent.snore_level * 4);
+  const breathingRate = Number(metrics.average_breathing_rate ?? 14);
+  const snoreLevel = Number(metrics.average_snore_level ?? 0);
+  const snorePenalty = Math.min(45, snoreLevel * 4);
   const breathingPenalty = Math.min(
     25,
-    Math.abs(lastEvent.breathing_rate - 14) * 2,
+    Math.abs(breathingRate - 14) * 2,
   );
   const riskPenalty =
-    session.latest_pre_analysis?.risk_level === "high"
+    session.latestPreAnalysis?.risk_level === "high"
       ? 15
-      : session.latest_pre_analysis?.risk_level === "medium"
+      : session.latestPreAnalysis?.risk_level === "medium"
         ? 7
         : 0;
 
@@ -56,12 +53,7 @@ function estimateSessionScore(session: SessionRecord): number | undefined {
   );
 }
 
-function formatSessionDate(dateIso: string): string {
-  const date = new Date(dateIso);
-  if (Number.isNaN(date.getTime())) {
-    return "Unknown date";
-  }
-
+function formatSessionDate(date: Date): string {
   const now = new Date();
   const diffDays = Math.floor(
     (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
@@ -95,6 +87,12 @@ function getTitleByRiskLevel(riskLevel: string | null | undefined): string {
 export function SessionHistoryScreen() {
   const navigation = useNavigation<Nav>();
   const {
+    selectedSessionId,
+    sessionDeviceFilter,
+    setSelectedSessionId,
+    setSessionDeviceFilter,
+  } = useAppStore();
+  const {
     sessions,
     total,
     setDeviceFilter,
@@ -104,46 +102,53 @@ export function SessionHistoryScreen() {
     hasMore,
     refresh,
     loadMore,
-  } = useSessionHistory({ pageSize: 8 });
-  const [filterInput, setFilterInput] = useState("");
+  } = useSessionHistory({ pageSize: 8, defaultDeviceId: sessionDeviceFilter });
+  const [filterInput, setFilterInput] = useState(sessionDeviceFilter);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDeviceFilter(filterInput);
+      setSessionDeviceFilter(filterInput.trim());
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [filterInput, setDeviceFilter]);
+  }, [filterInput, setDeviceFilter, setSessionDeviceFilter]);
 
   const monthLabel = useMemo(() => {
     if (!sessions.length) {
       return "No sessions yet";
     }
 
-    return new Date(sessions[0].started_at).toLocaleDateString(undefined, {
+    return sessions[0].startedAt.toLocaleDateString(undefined, {
       month: "long",
       year: "numeric",
     });
   }, [sessions]);
 
-  const renderItem = ({ item }: { item: SessionRecord }) => {
+  const renderItem = ({ item }: { item: SessionSummary }) => {
     const score = estimateSessionScore(item);
+    const isSelected = selectedSessionId === item.sessionId;
 
     return (
       <Pressable
         onPress={() => {
-          navigation.navigate("SessionDetail", { sessionId: item.session_id });
+          setSelectedSessionId(item.sessionId);
+          navigation.navigate("SessionDetail", { sessionId: item.sessionId });
         }}
       >
         <SessionHistoryCard
-          date={formatSessionDate(item.started_at)}
-          title={getTitleByRiskLevel(item.latest_pre_analysis?.risk_level)}
+          date={formatSessionDate(item.startedAt)}
+          title={getTitleByRiskLevel(item.latestPreAnalysis?.risk_level)}
           score={score}
           note={
-            item.latest_pre_analysis?.summary ||
+            item.latestPreAnalysis?.summary ||
             "No pre-analysis summary was generated for this session yet."
           }
-          statusLabel={item.latest_pre_analysis?.risk_level ?? "Recorded"}
+          statusLabel={
+            isSelected
+              ? `Selected • ${item.latestPreAnalysis?.risk_level ?? "recorded"}`
+              : item.latestPreAnalysis?.risk_level ?? "Recorded"
+          }
         />
       </Pressable>
     );
@@ -189,7 +194,7 @@ export function SessionHistoryScreen() {
       {!isLoading && !error && !sessions.length ? (
         <EmptyState
           title="No sessions available"
-          description="Try a different device filter or wait for your next synced sleep session."
+          description="Try a valid device id, then refresh. The list now uses device-scoped sessions for better reliability."
           actionLabel="Clear Filter"
           onAction={() => setFilterInput("")}
         />
@@ -199,7 +204,7 @@ export function SessionHistoryScreen() {
         <FlatList
           className="flex-1"
           data={sessions}
-          keyExtractor={(item) => item.session_id}
+          keyExtractor={(item) => item.sessionId}
           renderItem={renderItem}
           refreshControl={
             <RefreshControl

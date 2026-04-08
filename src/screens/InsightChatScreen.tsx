@@ -20,6 +20,7 @@ export function InsightChatScreen() {
     isLoadingContext,
     error,
     selectedSessionId,
+    selectedDeviceId,
     suggestions,
     sendMessage,
     resetChat,
@@ -72,7 +73,9 @@ export function InsightChatScreen() {
         subtitle={
           selectedSessionId
             ? `Live coaching for ${selectedSessionId}`
-            : "Live coaching session"
+            : selectedDeviceId
+              ? `Device context: ${selectedDeviceId}`
+              : "Live coaching session"
         }
       />
 

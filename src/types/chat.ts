@@ -16,3 +16,24 @@ export type InsightPromptSuggestion = {
   label: string;
   prompt: string;
 };
+
+export type InsightChatRequest = {
+  question: string;
+  session_id: string | null;
+  device_id: string | null;
+  store_conversation: boolean;
+};
+
+export type InsightChatResponse = {
+  question: string;
+  answer: string;
+  context: {
+    mode?: string;
+    session_id?: string | null;
+    device_id?: string | null;
+    [key: string]: unknown;
+  };
+  ai_used: boolean;
+  grounded: boolean;
+  generated_at: string;
+};

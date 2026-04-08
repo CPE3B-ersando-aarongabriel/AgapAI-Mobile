@@ -3,6 +3,23 @@ export type ApiErrorPayload = {
   detail?: string;
   code?: number;
   timestamp?: string;
+  // FastAPI validation errors often return detail as an array.
+  validation_detail?: {
+    loc?: (string | number)[];
+    msg?: string;
+    type?: string;
+  }[];
+  detail_items?: {
+    loc?: (string | number)[];
+    msg?: string;
+    type?: string;
+  }[];
+  // Fallback for native FastAPI structure: { detail: [{...}] }
+  detail_array?: {
+    loc?: (string | number)[];
+    msg?: string;
+    type?: string;
+  }[];
 };
 
 export type AppError = {
@@ -11,4 +28,5 @@ export type AppError = {
   code?: string;
   timestamp?: string;
   isNotFound?: boolean;
+  validationIssues?: string[];
 };

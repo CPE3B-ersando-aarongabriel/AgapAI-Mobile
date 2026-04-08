@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toAppError } from "../services/api/errors";
-import { getSessions } from "../services/api/sessionService";
+import { getDeviceSessions, getSessions } from "../services/api/sessionService";
 import type { AppError } from "../types/api";
-import type { SessionRecord } from "../types/session";
+import type { SessionRecord, SessionSummary } from "../types/session";
 
 export type UseSessionsOptions = {
   limit?: number;
@@ -10,7 +10,7 @@ export type UseSessionsOptions = {
 };
 
 export type UseSessionsResult = {
-  sessions: SessionRecord[];
+  sessions: (SessionRecord | SessionSummary)[];
   total: number;
   isLoading: boolean;
   error: AppError | null;
@@ -20,7 +20,7 @@ export type UseSessionsResult = {
 export function useSessions(
   options: UseSessionsOptions = {},
 ): UseSessionsResult {
-  const [sessions, setSessions] = useState<SessionRecord[]>([]);
+  const [sessions, setSessions] = useState<(SessionRecord | SessionSummary)[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<AppError | null>(null);
@@ -30,14 +30,24 @@ export function useSessions(
     setError(null);
 
     try {
-      const response = await getSessions({
-        limit: options.limit ?? 20,
-        skip: 0,
-        device_id: options.deviceId?.trim() || undefined,
-      });
+      const trimmedDeviceId = options.deviceId?.trim() || undefined;
 
-      setSessions(response.sessions);
-      setTotal(response.total);
+      if (trimmedDeviceId) {
+        const response = await getDeviceSessions(trimmedDeviceId, {
+          limit: options.limit ?? 20,
+          skip: 0,
+        });
+        setSessions(response.sessions);
+        setTotal(response.total);
+      } else {
+        const response = await getSessions({
+          limit: options.limit ?? 20,
+          skip: 0,
+        });
+
+        setSessions(response.sessions);
+        setTotal(response.total);
+      }
     } catch (err) {
       setError(toAppError(err));
     } finally {

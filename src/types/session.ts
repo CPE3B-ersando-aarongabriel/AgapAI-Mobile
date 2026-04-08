@@ -1,6 +1,6 @@
 export type RiskLevel = "low" | "medium" | "high" | string;
 
-export type SessionStatus = "active" | "completed" | string;
+export type SessionStatus = "active" | "ended" | "completed" | string;
 
 export type SessionStartRequest = {
   device_id: string;
@@ -40,6 +40,19 @@ export type PreAnalysis = {
   summary: string;
 };
 
+export type SessionSummaryMetrics = {
+  average_breathing_rate?: number;
+  average_snore_level?: number;
+  average_temperature?: number;
+  average_humidity?: number;
+  average_amplitude?: number;
+  rms_amplitude?: number;
+  peak_intensity?: number;
+  snore_event_count?: number;
+  sample_count?: number;
+  [key: string]: unknown;
+};
+
 export type SessionDataResponse = {
   session_id: string;
   recommendations: string[];
@@ -75,6 +88,124 @@ export type DeviceResponse = {
   breathing_pattern: BreathingPattern;
   pre_analysis: PreAnalysis;
   ai_used: boolean;
+  final_summary?: SessionSummaryMetrics | null;
+};
+
+export type SessionSummaryResponse = {
+  session_id: string;
+  device_id: string;
+  status: SessionStatus;
+  started_at: string;
+  updated_at: string;
+  ended_at: string | null;
+  sample_count: number;
+  device_summary: SessionSummaryMetrics | null;
+  backend_summary: SessionSummaryMetrics | null;
+  final_summary: SessionSummaryMetrics | null;
+  latest_pre_analysis: PreAnalysis | null;
+  latest_device_response: DeviceResponse | null;
+};
+
+export type DeviceSessionsResponse = {
+  device_id: string;
+  total: number;
+  sessions: SessionSummaryResponse[];
+};
+
+export type SessionLiveStatusResponse = {
+  session_id: string;
+  device_id: string;
+  status: SessionStatus;
+  started_at: string;
+  updated_at: string;
+  last_sample_at: string | null;
+  sample_count: number;
+  average_amplitude: number;
+  rms_amplitude: number;
+  peak_intensity: number;
+  snore_event_count: number;
+  average_breathing_rate: number;
+  average_temperature: number;
+  average_humidity: number;
+};
+
+export type SessionSampleResponse = {
+  recorded_at: string;
+  mic_raw: number;
+  mic_rms: number;
+  mic_peak: number;
+  temperature: number;
+  humidity: number;
+  breathing_rate: number;
+  movement_level: number;
+  presence_detected: boolean;
+  received_at: string;
+  chunk_id: string | null;
+};
+
+export type SessionSamplesPageResponse = {
+  session_id: string;
+  total: number;
+  samples: SessionSampleResponse[];
+};
+
+export type SessionSummary = {
+  sessionId: string;
+  deviceId: string;
+  status: SessionStatus;
+  startedAt: Date;
+  updatedAt: Date;
+  endedAt: Date | null;
+  sampleCount: number;
+  deviceSummary: SessionSummaryMetrics | null;
+  backendSummary: SessionSummaryMetrics | null;
+  finalSummary: SessionSummaryMetrics | null;
+  summaryMetrics: SessionSummaryMetrics | null;
+  latestPreAnalysis: PreAnalysis | null;
+  latestDeviceResponse: DeviceResponse | null;
+};
+
+export type DeviceSessions = {
+  deviceId: string;
+  total: number;
+  sessions: SessionSummary[];
+};
+
+export type SessionLiveStatus = {
+  sessionId: string;
+  deviceId: string;
+  status: SessionStatus;
+  startedAt: Date;
+  updatedAt: Date;
+  lastSampleAt: Date | null;
+  sampleCount: number;
+  averageAmplitude: number;
+  rmsAmplitude: number;
+  peakIntensity: number;
+  snoreEventCount: number;
+  averageBreathingRate: number;
+  averageTemperature: number;
+  averageHumidity: number;
+};
+
+export type SessionSample = {
+  recordedAt: Date;
+  micRaw: number;
+  micRms: number;
+  micPeak: number;
+  temperature: number;
+  humidity: number;
+  breathingRate: number;
+  movementLevel: number;
+  presenceDetected: boolean;
+  receivedAt: Date;
+  chunkId: string | null;
+};
+
+export type SessionSamplesPage = {
+  sessionId: string;
+  total: number;
+  samples: SessionSample[];
 };
 
 export type SessionRecord = {

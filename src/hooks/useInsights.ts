@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toAppError } from "../services/api/errors";
 import {
-  getSessionById,
-  getSessions,
-  requestAdvancedAnalysis,
+  getDeviceSessions,
+  requestInsightChat,
 } from "../services/api/sessionService";
+import { getDashboard } from "../services/api/dashboardService";
+import { toAppError } from "../services/api/errors";
+import { useAppStore } from "../store/appStore";
 import type { AppError } from "../types/api";
-import type { InsightMessage, InsightPromptSuggestion } from "../types/chat";
+import type {
+  InsightMessage,
+  InsightPromptSuggestion,
+} from "../types/chat";
 
 function createId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
@@ -66,16 +70,17 @@ export type UseInsightsResult = {
   isLoadingContext: boolean;
   error: AppError | null;
   selectedSessionId: string | null;
+  selectedDeviceId: string | null;
   suggestions: InsightPromptSuggestion[];
   sendMessage: (text: string) => Promise<void>;
   resetChat: () => void;
 };
 
 export function useInsights(): UseInsightsResult {
+  const { selectedSessionId: selectedSessionFromStore } = useAppStore();
   const [messages, setMessages] = useState<InsightMessage[]>([]);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
-    null,
-  );
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [isLoadingContext, setIsLoadingContext] = useState(true);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
@@ -98,8 +103,21 @@ export function useInsights(): UseInsightsResult {
       setError(null);
 
       try {
-        const response = await getSessions({ limit: 1, skip: 0 });
-        setSelectedSessionId(response.sessions[0]?.session_id ?? null);
+        const dashboard = await getDashboard();
+        const firstDeviceId = dashboard.latest_highlights[0]?.device_id ?? null;
+        setSelectedDeviceId(firstDeviceId);
+
+        if (selectedSessionFromStore) {
+          setSelectedSessionId(selectedSessionFromStore);
+        } else if (firstDeviceId) {
+          const sessions = await getDeviceSessions(firstDeviceId, {
+            limit: 1,
+            skip: 0,
+          });
+          setSelectedSessionId(sessions.sessions[0]?.sessionId ?? null);
+        } else {
+          setSelectedSessionId(null);
+        }
       } catch (err) {
         setError(toAppError(err));
       } finally {
@@ -108,7 +126,7 @@ export function useInsights(): UseInsightsResult {
     };
 
     void loadContext();
-  }, []);
+  }, [selectedSessionFromStore]);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -127,14 +145,14 @@ export function useInsights(): UseInsightsResult {
       setMessages((current) => [...current, userMessage]);
       setError(null);
 
-      if (!selectedSessionId) {
+      if (!selectedSessionId && !selectedDeviceId) {
         setMessages((current) => [
           ...current,
           {
             id: createId(),
             role: "assistant",
             content:
-              "No session is available yet. Record at least one session from your device to unlock personalized insights.",
+              "No session context is available yet. Record at least one session from your device to unlock personalized insights.",
             createdAt: new Date().toISOString(),
             isError: true,
           },
@@ -146,38 +164,27 @@ export function useInsights(): UseInsightsResult {
 
       try {
         const focusAreas = inferFocusAreas(trimmed);
-
-        const [detail, advanced] = await Promise.all([
-          getSessionById(selectedSessionId),
-          requestAdvancedAnalysis(selectedSessionId, {
-            focus_areas: focusAreas,
-            include_environmental_context: true,
-            include_behavioral_suggestions: true,
-          }),
-        ]);
-
-        const preSummary = detail.latest_pre_analysis?.summary;
+        const response = await requestInsightChat({
+          question: `${trimmed}${focusAreas.length ? `\n\nFocus areas: ${focusAreas.join(", ")}` : ""}`,
+          session_id: selectedSessionId,
+          device_id: selectedDeviceId,
+          store_conversation: true,
+        });
 
         const assistantMessage: InsightMessage = {
           id: createId(),
           role: "assistant",
-          content:
-            preSummary ||
-            "Here is guidance based on your selected session and advanced analysis request.",
+          content: response.answer,
           createdAt: new Date().toISOString(),
-          sourceSessionId: selectedSessionId,
+          sourceSessionId: response.context.session_id ?? selectedSessionId ?? undefined,
           sections: [
             {
-              title: "Deep Insights",
-              items: advanced.detailed_insights,
-            },
-            {
-              title: "Recommended Actions",
-              items: advanced.recommendations,
-            },
-            {
-              title: "Confidence",
-              items: [advanced.confidence_note],
+              title: "Context",
+              items: [
+                `Mode: ${response.context.mode ?? "unknown"}`,
+                `AI used: ${response.ai_used ? "yes" : "no"}`,
+                `Grounded: ${response.grounded ? "yes" : "no"}`,
+              ],
             },
           ],
         };
@@ -200,7 +207,7 @@ export function useInsights(): UseInsightsResult {
         setIsStreaming(false);
       }
     },
-    [isStreaming, selectedSessionId],
+    [isStreaming, selectedDeviceId, selectedSessionId],
   );
 
   const resetChat = useCallback(() => {
@@ -224,6 +231,7 @@ export function useInsights(): UseInsightsResult {
     isLoadingContext,
     error,
     selectedSessionId,
+    selectedDeviceId,
     suggestions,
     sendMessage,
     resetChat,
