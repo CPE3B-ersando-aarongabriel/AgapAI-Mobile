@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toAppError } from "../services/api/errors";
 import { getDashboard } from "../services/api/dashboardService";
+import { toAppError } from "../services/api/errors";
 import { getDeviceSessions } from "../services/api/sessionService";
 import type { AppError } from "../types/api";
 import type { SessionSummary } from "../types/session";
@@ -35,7 +35,9 @@ export function useSessionHistory(
 ): UseSessionHistoryResult {
   const pageSize = options.pageSize ?? 10;
   const defaultDeviceId =
-    options.defaultDeviceId?.trim() ?? process.env.EXPO_PUBLIC_DEFAULT_DEVICE_ID?.trim() ?? "";
+    options.defaultDeviceId?.trim() ??
+    process.env.EXPO_PUBLIC_DEFAULT_DEVICE_ID?.trim() ??
+    "";
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [skip, setSkip] = useState(0);

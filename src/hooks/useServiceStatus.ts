@@ -26,14 +26,25 @@ export function useServiceStatus(): UseServiceStatusResult {
     setError(null);
 
     try {
-      const [rootResponse, healthResponse] = await Promise.all([
+      const [rootResult, healthResult] = await Promise.allSettled([
         getRootServiceInfo(),
         getHealthStatus(),
       ]);
-      setRootInfo(rootResponse);
-      setHealth(healthResponse);
-    } catch (err) {
-      setError(toAppError(err));
+
+      if (rootResult.status === "fulfilled") {
+        setRootInfo(rootResult.value);
+      }
+
+      if (healthResult.status === "fulfilled") {
+        setHealth(healthResult.value);
+      }
+
+      if (
+        rootResult.status === "rejected" &&
+        healthResult.status === "rejected"
+      ) {
+        setError(toAppError(rootResult.reason));
+      }
     } finally {
       setIsLoading(false);
     }

@@ -30,7 +30,9 @@ export function ScreenContainer({
             {children}
           </ScrollView>
         ) : (
-          <View className={`flex-1 px-5 ${contentClassName}`.trim()}>{children}</View>
+          <View className={`flex-1 px-5 ${contentClassName}`.trim()}>
+            {children}
+          </View>
         )}
       </SafeAreaView>
     </LinearGradient>

@@ -33,10 +33,7 @@ function estimateSessionScore(session: SessionSummary): number | undefined {
   const breathingRate = Number(metrics.average_breathing_rate ?? 14);
   const snoreLevel = Number(metrics.average_snore_level ?? 0);
   const snorePenalty = Math.min(45, snoreLevel * 4);
-  const breathingPenalty = Math.min(
-    25,
-    Math.abs(breathingRate - 14) * 2,
-  );
+  const breathingPenalty = Math.min(25, Math.abs(breathingRate - 14) * 2);
   const riskPenalty =
     session.latestPreAnalysis?.risk_level === "high"
       ? 15
@@ -147,7 +144,7 @@ export function SessionHistoryScreen() {
           statusLabel={
             isSelected
               ? `Selected • ${item.latestPreAnalysis?.risk_level ?? "recorded"}`
-              : item.latestPreAnalysis?.risk_level ?? "Recorded"
+              : (item.latestPreAnalysis?.risk_level ?? "Recorded")
           }
         />
       </Pressable>

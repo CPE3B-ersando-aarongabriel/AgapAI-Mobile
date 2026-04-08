@@ -29,10 +29,7 @@ function mapLegacyToSummary(record: {
     status: record.ended_at ? "ended" : "active",
     startedAt: Number.isNaN(startedAt.getTime()) ? new Date() : startedAt,
     updatedAt: Number.isNaN(updatedAt.getTime()) ? new Date() : updatedAt,
-    endedAt:
-      endedAt && !Number.isNaN(endedAt.getTime())
-        ? endedAt
-        : null,
+    endedAt: endedAt && !Number.isNaN(endedAt.getTime()) ? endedAt : null,
     sampleCount: record.sensor_events.length,
     deviceSummary: null,
     backendSummary: null,

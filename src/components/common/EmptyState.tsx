@@ -1,5 +1,6 @@
 import { Text, View } from "react-native";
 import { AgapButton } from "./AgapButton";
+import { AgapLogo } from "./AgapLogo";
 
 type EmptyStateProps = {
   title: string;
@@ -16,6 +17,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <View className="items-center rounded-2xl border border-[#2C446B] bg-[#0F2348] p-5">
+      <AgapLogo size={44} withBadge />
       <Text className="text-lg font-semibold text-[#EDF4FF]">{title}</Text>
       <Text className="mt-2 text-center text-sm leading-6 text-[#9FB5D6]">
         {description}

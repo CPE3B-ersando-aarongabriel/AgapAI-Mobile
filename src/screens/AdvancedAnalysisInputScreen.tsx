@@ -6,6 +6,7 @@ import { Pressable, Text, TextInput, View } from "react-native";
 import { AgapButton } from "../components/common/AgapButton";
 import { AgapCard } from "../components/common/AgapCard";
 import { AgapHeader } from "../components/common/AgapHeader";
+import { AgapLogo } from "../components/common/AgapLogo";
 import { EmptyState } from "../components/common/EmptyState";
 import { ScreenContainer } from "../components/common/ScreenContainer";
 import type { RootStackParamList } from "../navigation/types";
@@ -123,7 +124,9 @@ export function AdvancedAnalysisInputScreen() {
       />
 
       <AgapCard className="mb-4 overflow-hidden p-0">
-        <View className="h-36 w-full bg-[#0E2953]" />
+        <View className="h-36 w-full items-center justify-center bg-[#0E2953]">
+          <AgapLogo size={132} />
+        </View>
       </AgapCard>
 
       <AgapCard className="mb-3">

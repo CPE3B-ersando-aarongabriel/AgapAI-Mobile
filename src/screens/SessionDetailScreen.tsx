@@ -1,5 +1,9 @@
-import { useIsFocused, useNavigation, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
+import {
+  useIsFocused,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -26,7 +30,11 @@ type DetailRoute = RouteProp<RootStackParamList, "SessionDetail">;
 
 type DetailSection = "overview" | "live" | "samples" | "insights";
 
-function toDisplayValue(value?: number | null, suffix = "", digits = 1): string {
+function toDisplayValue(
+  value?: number | null,
+  suffix = "",
+  digits = 1,
+): string {
   if (typeof value !== "number" || Number.isNaN(value)) {
     return "Unavailable";
   }
@@ -75,10 +83,7 @@ export function SessionDetailScreen() {
     [samples],
   );
   const breathingValues = useMemo(
-    () =>
-      samples
-        .slice(-14)
-        .map((item) => Math.max(0, item.breathingRate)),
+    () => samples.slice(-14).map((item) => Math.max(0, item.breathingRate)),
     [samples],
   );
   const temperatureValues = useMemo(
@@ -139,7 +144,9 @@ export function SessionDetailScreen() {
       {!isLoading && !error && session ? (
         <>
           <View className="mb-4 flex-row flex-wrap gap-2">
-            {(["overview", "live", "samples", "insights"] as DetailSection[]).map((item) => (
+            {(
+              ["overview", "live", "samples", "insights"] as DetailSection[]
+            ).map((item) => (
               <Pressable
                 key={item}
                 onPress={() => setSection(item)}
@@ -168,27 +175,42 @@ export function SessionDetailScreen() {
               <View className="mb-3 flex-row gap-3">
                 <SessionMetricTile
                   label="Breathing"
-                  value={toDisplayValue(summaryMetrics?.average_breathing_rate, " rpm")}
+                  value={toDisplayValue(
+                    summaryMetrics?.average_breathing_rate,
+                    " rpm",
+                  )}
                 />
                 <SessionMetricTile
                   label="Snore Level"
-                  value={toDisplayValue(summaryMetrics?.average_snore_level, " / 100")}
+                  value={toDisplayValue(
+                    summaryMetrics?.average_snore_level,
+                    " / 100",
+                  )}
                 />
               </View>
 
               <View className="mb-4 flex-row gap-3">
                 <SessionMetricTile
                   label="Room Temp"
-                  value={toDisplayValue(summaryMetrics?.average_temperature, " C")}
+                  value={toDisplayValue(
+                    summaryMetrics?.average_temperature,
+                    " C",
+                  )}
                 />
                 <SessionMetricTile
                   label="Humidity"
-                  value={toDisplayValue(summaryMetrics?.average_humidity, "%", 0)}
+                  value={toDisplayValue(
+                    summaryMetrics?.average_humidity,
+                    "%",
+                    0,
+                  )}
                 />
               </View>
 
               <BreathingPatternCard
-                pattern={session.latestDeviceResponse?.breathing_pattern ?? null}
+                pattern={
+                  session.latestDeviceResponse?.breathing_pattern ?? null
+                }
               />
 
               <View className="mt-4">
@@ -328,7 +350,8 @@ export function SessionDetailScreen() {
                       Presence detected points: {presenceDetectedCount}
                     </Text>
                     <Text className="mt-1 text-sm text-[#D8E7FF]">
-                      Avg movement level: {toDisplayValue(avgMovementLevel, "", 2)}
+                      Avg movement level:{" "}
+                      {toDisplayValue(avgMovementLevel, "", 2)}
                     </Text>
                   </AgapCard>
 
@@ -340,7 +363,11 @@ export function SessionDetailScreen() {
                     />
                     {hasMore ? (
                       <AgapButton
-                        title={isLoadingMore ? "Loading more..." : "Load More Samples"}
+                        title={
+                          isLoadingMore
+                            ? "Loading more..."
+                            : "Load More Samples"
+                        }
                         onPress={() => void loadMore()}
                         disabled={isLoadingMore}
                         isLoading={isLoadingMore}
@@ -370,7 +397,9 @@ export function SessionDetailScreen() {
                       key={flag}
                       className="rounded-xl border border-[#2F4C7A] bg-[#172F58] p-3"
                     >
-                      <Text className="text-xs leading-5 text-[#D8E7FF]">• {flag}</Text>
+                      <Text className="text-xs leading-5 text-[#D8E7FF]">
+                        • {flag}
+                      </Text>
                     </View>
                   ))}
                 </View>

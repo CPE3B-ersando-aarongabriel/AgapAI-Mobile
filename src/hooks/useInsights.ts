@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { getDashboard } from "../services/api/dashboardService";
+import { toAppError } from "../services/api/errors";
 import {
   getDeviceSessions,
   requestInsightChat,
 } from "../services/api/sessionService";
-import { getDashboard } from "../services/api/dashboardService";
-import { toAppError } from "../services/api/errors";
 import { useAppStore } from "../store/appStore";
 import type { AppError } from "../types/api";
-import type {
-  InsightMessage,
-  InsightPromptSuggestion,
-} from "../types/chat";
+import type { InsightMessage, InsightPromptSuggestion } from "../types/chat";
 
 function createId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
@@ -79,7 +76,9 @@ export type UseInsightsResult = {
 export function useInsights(): UseInsightsResult {
   const { selectedSessionId: selectedSessionFromStore } = useAppStore();
   const [messages, setMessages] = useState<InsightMessage[]>([]);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
+    null,
+  );
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [isLoadingContext, setIsLoadingContext] = useState(true);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -176,7 +175,8 @@ export function useInsights(): UseInsightsResult {
           role: "assistant",
           content: response.answer,
           createdAt: new Date().toISOString(),
-          sourceSessionId: response.context.session_id ?? selectedSessionId ?? undefined,
+          sourceSessionId:
+            response.context.session_id ?? selectedSessionId ?? undefined,
           sections: [
             {
               title: "Context",

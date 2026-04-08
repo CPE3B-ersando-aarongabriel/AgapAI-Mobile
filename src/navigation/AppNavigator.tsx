@@ -2,6 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { DefaultTheme, NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { Image } from "react-native";
+import { agapaiLogo } from "../assets/logos";
 import { AdvancedAnalysisInputScreen } from "../screens/AdvancedAnalysisInputScreen";
 import { AdvancedAnalysisLoadingScreen } from "../screens/AdvancedAnalysisLoadingScreen";
 import { HomeDashboardScreen } from "../screens/HomeDashboardScreen";
@@ -45,10 +47,18 @@ function MainTabsNavigator() {
           fontWeight: "600",
         },
         tabBarIcon: ({ color, size }) => {
+          if (route.name === "HomeDashboard") {
+            return (
+              <Image
+                source={agapaiLogo}
+                style={{ width: size + 5, height: size + 5 }}
+                resizeMode="contain"
+              />
+            );
+          }
+
           const iconName =
-            route.name === "HomeDashboard"
-              ? "home-outline"
-              : route.name === "SessionHistory"
+            route.name === "SessionHistory"
                 ? "time-outline"
                 : "chatbubble-ellipses-outline";
 

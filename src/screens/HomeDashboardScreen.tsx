@@ -21,8 +21,13 @@ function clampScore(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
-function estimateScore(avgBreathingRate: number, avgSnoreLevel: number): number {
-  return clampScore(100 - avgSnoreLevel * 3 - Math.abs(avgBreathingRate - 14) * 2);
+function estimateScore(
+  avgBreathingRate: number,
+  avgSnoreLevel: number,
+): number {
+  return clampScore(
+    100 - avgSnoreLevel * 3 - Math.abs(avgBreathingRate - 14) * 2,
+  );
 }
 
 export function HomeDashboardScreen() {
@@ -44,9 +49,13 @@ export function HomeDashboardScreen() {
   const isLoading = isDashboardLoading || isStatusLoading;
   const error = dashboardError ?? statusError;
   const latestHighlight = dashboard?.latest_highlights[0];
-  const trendValues = dashboard?.trends.map((item) => Math.round(item.avg_breathing_rate)) ?? [];
+  const trendValues =
+    dashboard?.trends.map((item) => Math.round(item.avg_breathing_rate)) ?? [];
   const estimatedScore = dashboard
-    ? estimateScore(dashboard.average_breathing_rate, dashboard.average_snore_level)
+    ? estimateScore(
+        dashboard.average_breathing_rate,
+        dashboard.average_snore_level,
+      )
     : null;
   const healthLabel = health?.status === "healthy" ? "Online" : "Check";
 
@@ -62,7 +71,9 @@ export function HomeDashboardScreen() {
         rightLabel={healthLabel}
       />
 
-      {isLoading ? <LoadingState label="Syncing dashboard from backend..." /> : null}
+      {isLoading ? (
+        <LoadingState label="Syncing dashboard from backend..." />
+      ) : null}
 
       {!isLoading && error ? (
         <ErrorState
@@ -104,7 +115,8 @@ export function HomeDashboardScreen() {
               </View>
               <View className="rounded-full bg-[#193765] px-3 py-1">
                 <Text className="text-[11px] text-[#D9E7FF]">
-                  Snore Avg {formatScore(100 - dashboard.average_snore_level * 4)}
+                  Snore Avg{" "}
+                  {formatScore(100 - dashboard.average_snore_level * 4)}
                 </Text>
               </View>
             </View>

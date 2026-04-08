@@ -20,7 +20,9 @@ export type UseSessionsResult = {
 export function useSessions(
   options: UseSessionsOptions = {},
 ): UseSessionsResult {
-  const [sessions, setSessions] = useState<(SessionRecord | SessionSummary)[]>([]);
+  const [sessions, setSessions] = useState<(SessionRecord | SessionSummary)[]>(
+    [],
+  );
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<AppError | null>(null);

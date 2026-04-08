@@ -30,10 +30,14 @@ function parseOptionalIsoToDate(value: string | null): Date | null {
 function resolveSummaryMetrics(
   summary: SessionSummaryResponse,
 ): SessionSummaryMetrics | null {
-  return summary.final_summary ?? summary.backend_summary ?? summary.device_summary;
+  return (
+    summary.final_summary ?? summary.backend_summary ?? summary.device_summary
+  );
 }
 
-export function mapSessionSummary(response: SessionSummaryResponse): SessionSummary {
+export function mapSessionSummary(
+  response: SessionSummaryResponse,
+): SessionSummary {
   return {
     sessionId: response.session_id,
     deviceId: response.device_id,
@@ -51,7 +55,9 @@ export function mapSessionSummary(response: SessionSummaryResponse): SessionSumm
   };
 }
 
-export function mapDeviceSessions(response: DeviceSessionsResponse): DeviceSessions {
+export function mapDeviceSessions(
+  response: DeviceSessionsResponse,
+): DeviceSessions {
   return {
     deviceId: response.device_id,
     total: response.total,
@@ -80,7 +86,9 @@ export function mapSessionLiveStatus(
   };
 }
 
-export function mapSessionSample(response: SessionSampleResponse): SessionSample {
+export function mapSessionSample(
+  response: SessionSampleResponse,
+): SessionSample {
   return {
     recordedAt: parseIsoToDate(response.recorded_at),
     micRaw: response.mic_raw,

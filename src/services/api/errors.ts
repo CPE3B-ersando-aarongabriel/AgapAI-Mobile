@@ -64,9 +64,11 @@ export function toAppError(error: unknown): AppError {
 
   const statusCode = error.response?.status;
   const payload = (error.response?.data ?? {}) as ApiErrorPayload;
-  const detail = typeof payload.detail === "string" ? cleanText(payload.detail) : "";
+  const detail =
+    typeof payload.detail === "string" ? cleanText(payload.detail) : "";
   const code = typeof payload.error === "string" ? payload.error : undefined;
-  const timestamp = typeof payload.timestamp === "string" ? payload.timestamp : undefined;
+  const timestamp =
+    typeof payload.timestamp === "string" ? payload.timestamp : undefined;
   const isNotFound = statusCode === 404 || payload.code === 404;
   const validationIssues = parseValidationIssues(error.response?.data);
 

@@ -111,13 +111,25 @@ export function useSessionSamples(
     }
 
     await fetchPage(skip + pageSize, true);
-  }, [fetchPage, isLoading, isLoadingMore, pageSize, samples.length, sessionId, skip, total]);
+  }, [
+    fetchPage,
+    isLoading,
+    isLoadingMore,
+    pageSize,
+    samples.length,
+    sessionId,
+    skip,
+    total,
+  ]);
 
   useEffect(() => {
     void fetchPage(0, false);
   }, [fetchPage]);
 
-  const hasMore = useMemo(() => samples.length < total, [samples.length, total]);
+  const hasMore = useMemo(
+    () => samples.length < total,
+    [samples.length, total],
+  );
 
   return {
     samples,

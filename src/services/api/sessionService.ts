@@ -1,27 +1,29 @@
 import type {
-  AdvancedAnalysisRecord,
-  DeviceSessions,
-  DeviceSessionsResponse,
-  DeviceResponse,
-  PreAnalysis,
-  SessionLiveStatus,
-  SessionLiveStatusResponse,
-  SessionSamplesPage,
-  SessionSamplesPageResponse,
-  SessionSummary,
-  SessionSummaryResponse,
-  SessionDataRequest,
-  SessionDataResponse,
-  SessionRecord,
-  SessionsResponse,
-  SessionStartRequest,
-  SessionStartResponse,
-} from "../../types/session";
-import type {
   AdvancedAnalysisRequestPayload,
   AdvancedAnalysisResponse,
 } from "../../types/analysis";
 import type { InsightChatRequest, InsightChatResponse } from "../../types/chat";
+import type {
+  AdvancedAnalysisRecord,
+  DeviceResponse,
+  DeviceSessions,
+  DeviceSessionsResponse,
+  PreAnalysis,
+  SessionDataRequest,
+  SessionDataResponse,
+  SessionLiveStatus,
+  SessionLiveStatusResponse,
+  SessionRecord,
+  SessionSamplesPage,
+  SessionSamplesPageResponse,
+  SessionsResponse,
+  SessionStartRequest,
+  SessionStartResponse,
+  SessionSummary,
+  SessionSummaryResponse,
+} from "../../types/session";
+import { apiClient } from "./client";
+import { apiEndpoints } from "./endpoints";
 import { cleanBackendText } from "./errors";
 import {
   mapDeviceSessions,
@@ -30,8 +32,6 @@ import {
   mapSessionSummary,
 } from "./mappers";
 import { withGetRetry } from "./retry";
-import { apiClient } from "./client";
-import { apiEndpoints } from "./endpoints";
 
 export type SessionListQuery = {
   limit?: number;
@@ -63,8 +63,12 @@ function sanitizeAdvanced(
   return {
     ...advanced,
     confidence_note: cleanBackendText(advanced.confidence_note),
-    detailed_insights: advanced.detailed_insights.map((item) => cleanBackendText(item)),
-    recommendations: advanced.recommendations.map((item) => cleanBackendText(item)),
+    detailed_insights: advanced.detailed_insights.map((item) =>
+      cleanBackendText(item),
+    ),
+    recommendations: advanced.recommendations.map((item) =>
+      cleanBackendText(item),
+    ),
   };
 }
 
@@ -89,7 +93,9 @@ function sanitizeDeviceResponse(
 
   return {
     ...response,
-    recommendations: response.recommendations.map((item) => cleanBackendText(item)),
+    recommendations: response.recommendations.map((item) =>
+      cleanBackendText(item),
+    ),
     pre_analysis: {
       ...response.pre_analysis,
       summary: cleanBackendText(response.pre_analysis.summary),
@@ -108,7 +114,9 @@ function sanitizeSessionSummaryResponse(
   return {
     ...summary,
     latest_pre_analysis: sanitizePreAnalysis(summary.latest_pre_analysis),
-    latest_device_response: sanitizeDeviceResponse(summary.latest_device_response),
+    latest_device_response: sanitizeDeviceResponse(
+      summary.latest_device_response,
+    ),
   };
 }
 
@@ -116,7 +124,9 @@ function sanitizeSessionRecord(session: SessionRecord): SessionRecord {
   return {
     ...session,
     latest_pre_analysis: sanitizePreAnalysis(session.latest_pre_analysis),
-    latest_device_response: sanitizeDeviceResponse(session.latest_device_response),
+    latest_device_response: sanitizeDeviceResponse(
+      session.latest_device_response,
+    ),
     advanced_analysis: sanitizeAdvanced(session.advanced_analysis),
   };
 }
@@ -160,13 +170,16 @@ export async function getDeviceSessions(
   options: RequestOptions = {},
 ): Promise<DeviceSessions> {
   const response = await withGetRetry(() =>
-    apiClient.get<DeviceSessionsResponse>(apiEndpoints.deviceSessions(deviceId), {
-      params: {
-        limit: query.limit,
-        skip: query.skip,
+    apiClient.get<DeviceSessionsResponse>(
+      apiEndpoints.deviceSessions(deviceId),
+      {
+        params: {
+          limit: query.limit,
+          skip: query.skip,
+        },
+        signal: options.signal,
       },
-      signal: options.signal,
-    }),
+    ),
   );
 
   return mapDeviceSessions({
@@ -182,9 +195,12 @@ export async function getSessionSummary(
   options: RequestOptions = {},
 ): Promise<SessionSummary> {
   const response = await withGetRetry(() =>
-    apiClient.get<SessionSummaryResponse>(apiEndpoints.sessionSummary(sessionId), {
-      signal: options.signal,
-    }),
+    apiClient.get<SessionSummaryResponse>(
+      apiEndpoints.sessionSummary(sessionId),
+      {
+        signal: options.signal,
+      },
+    ),
   );
 
   return mapSessionSummary(sanitizeSessionSummaryResponse(response.data));
@@ -195,9 +211,12 @@ export async function getSessionLiveStatus(
   options: RequestOptions = {},
 ): Promise<SessionLiveStatus> {
   const response = await withGetRetry(() =>
-    apiClient.get<SessionLiveStatusResponse>(apiEndpoints.sessionLive(sessionId), {
-      signal: options.signal,
-    }),
+    apiClient.get<SessionLiveStatusResponse>(
+      apiEndpoints.sessionLive(sessionId),
+      {
+        signal: options.signal,
+      },
+    ),
   );
 
   return mapSessionLiveStatus(response.data);
@@ -212,13 +231,16 @@ export async function getSessionSamples(
   const skip = Math.max(0, query.skip ?? 0);
 
   const response = await withGetRetry(() =>
-    apiClient.get<SessionSamplesPageResponse>(apiEndpoints.sessionSamples(sessionId), {
-      params: {
-        limit,
-        skip,
+    apiClient.get<SessionSamplesPageResponse>(
+      apiEndpoints.sessionSamples(sessionId),
+      {
+        params: {
+          limit,
+          skip,
+        },
+        signal: options.signal,
       },
-      signal: options.signal,
-    }),
+    ),
   );
 
   return mapSessionSamplesPage(response.data);
@@ -245,7 +267,9 @@ export async function getSessions(
   };
 }
 
-export async function getSessionById(sessionId: string): Promise<SessionRecord> {
+export async function getSessionById(
+  sessionId: string,
+): Promise<SessionRecord> {
   const response = await withGetRetry(() =>
     apiClient.get<SessionRecord>(apiEndpoints.sessionById(sessionId)),
   );

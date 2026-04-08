@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
+import { AgapLogo } from "./AgapLogo";
 
 type AgapHeaderProps = {
   title: string;
@@ -36,10 +37,13 @@ export function AgapHeader({
           ) : null}
         </View>
       </View>
-      <View className="h-9 w-9 items-center justify-center rounded-full border border-[#2C446B] bg-[#0E2449]">
-        <Text className="text-[10px] font-semibold text-[#C8DAFF]">
-          {rightLabel}
-        </Text>
+      <View className="flex-row items-center gap-2">
+        <View className="rounded-full border border-[#2C446B] bg-[#0E2449] px-2.5 py-1">
+          <Text className="text-[10px] font-semibold text-[#C8DAFF]">
+            {rightLabel}
+          </Text>
+        </View>
+        <AgapLogo size={19} withBadge />
       </View>
     </View>
   );
