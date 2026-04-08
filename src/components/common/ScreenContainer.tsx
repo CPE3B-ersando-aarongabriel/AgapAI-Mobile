@@ -15,17 +15,43 @@ export function ScreenContainer({
 }: ScreenContainerProps) {
   return (
     <LinearGradient
-      colors={["#041027", "#081A3A", "#0F2D63"]}
+      colors={["#050D1E", "#0B1B38", "#163469"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{ flex: 1 }}
     >
+      <LinearGradient
+        colors={["rgba(127, 160, 222, 0.18)", "rgba(127, 160, 222, 0)"]}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={{
+          position: "absolute",
+          top: -80,
+          right: -40,
+          width: 260,
+          height: 260,
+          borderRadius: 130,
+        }}
+      />
+      <LinearGradient
+        colors={["rgba(167, 162, 251, 0.14)", "rgba(167, 162, 251, 0)"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          position: "absolute",
+          bottom: -110,
+          left: -70,
+          width: 300,
+          height: 300,
+          borderRadius: 150,
+        }}
+      />
       <SafeAreaView edges={["top", "left", "right"]} style={{ flex: 1 }}>
         {scrollable ? (
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 32 }}
-            className={`px-5 ${contentClassName}`.trim()}
+            contentContainerStyle={{ paddingBottom: 40, paddingHorizontal: 20 }}
+            className={`${contentClassName}`.trim()}
           >
             {children}
           </ScrollView>

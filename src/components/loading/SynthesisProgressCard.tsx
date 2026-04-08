@@ -11,6 +11,11 @@ export function SynthesisProgressCard({
   progressLabel,
   progressValue,
 }: SynthesisProgressCardProps) {
+  const parsedProgress = Number(progressValue.replace("%", ""));
+  const normalizedProgress = Number.isFinite(parsedProgress)
+    ? Math.max(4, Math.min(100, parsedProgress))
+    : 0;
+
   return (
     <View className="w-full rounded-2xl border border-[#2C446B] bg-[#10264B] p-4">
       <Text className="text-[11px] uppercase tracking-[1px] text-[#8EA8CF]">
@@ -20,7 +25,10 @@ export function SynthesisProgressCard({
         {title}
       </Text>
       <View className="mt-3 h-2 overflow-hidden rounded-full bg-[#223C67]">
-        <View className="h-2 w-4/5 rounded-full bg-[#4A8CFF]" />
+        <View
+          className="h-2 rounded-full bg-[#7EA3D9]"
+          style={{ width: `${normalizedProgress}%` }}
+        />
       </View>
       <View className="mt-2 flex-row items-center justify-between">
         <Text className="text-xs text-[#9DB4D8]">{progressLabel}</Text>

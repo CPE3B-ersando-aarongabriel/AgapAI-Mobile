@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/images/playstore.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.agersando.agapaimobile"
     },
     "web": {
       "output": "single",
@@ -41,6 +42,12 @@
     ],
     "experiments": {
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8e0f748b-8a70-43ec-b827-8bfb43804ed6"
+      }
+    },
+    "owner": "agersando"
   }
 }

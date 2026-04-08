@@ -1,7 +1,14 @@
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useMemo, useState } from "react";
 import { Text, View } from "react-native";
-import { SleepTrendBars } from "../components/charts/SleepTrendBars";
+import {
+  ComparisonBarChart,
+  RangeSelector,
+  SleepStagePieChart,
+  TrendLineChart,
+  type ChartRange,
+} from "../components/charts/InsightCharts";
 import { AgapButton } from "../components/common/AgapButton";
 import { AgapCard } from "../components/common/AgapCard";
 import { AgapHeader } from "../components/common/AgapHeader";
@@ -32,6 +39,7 @@ function estimateScore(
 
 export function HomeDashboardScreen() {
   const navigation = useNavigation<Nav>();
+  const [range, setRange] = useState<ChartRange>("week");
   const {
     dashboard,
     isLoading: isDashboardLoading,
@@ -49,8 +57,6 @@ export function HomeDashboardScreen() {
   const isLoading = isDashboardLoading || isStatusLoading;
   const error = dashboardError ?? statusError;
   const latestHighlight = dashboard?.latest_highlights[0];
-  const trendValues =
-    dashboard?.trends.map((item) => Math.round(item.avg_breathing_rate)) ?? [];
   const estimatedScore = dashboard
     ? estimateScore(
         dashboard.average_breathing_rate,
@@ -58,6 +64,81 @@ export function HomeDashboardScreen() {
       )
     : null;
   const healthLabel = health?.status === "healthy" ? "Online" : "Check";
+
+  const filteredTrends = useMemo(() => {
+    if (!dashboard?.trends.length) {
+      return [];
+    }
+
+    const windowSize = range === "day" ? 4 : range === "week" ? 7 : 30;
+    return dashboard.trends.slice(-windowSize);
+  }, [dashboard?.trends, range]);
+
+  const breathingTrendValues = useMemo(
+    () =>
+      filteredTrends.map((item) => Number(item.avg_breathing_rate.toFixed(1))),
+    [filteredTrends],
+  );
+  const trendLabels = useMemo(
+    () =>
+      filteredTrends.map((item) =>
+        new Date(item.date).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        }),
+      ),
+    [filteredTrends],
+  );
+  const averageTrendBreathing =
+    breathingTrendValues.length > 0
+      ? breathingTrendValues.reduce((sum, value) => sum + value, 0) /
+        breathingTrendValues.length
+      : null;
+
+  const comparisonData = useMemo(() => {
+    if (!dashboard) {
+      return [];
+    }
+
+    return [
+      {
+        label: "Breath",
+        value: clampScore(
+          100 - Math.abs(dashboard.average_breathing_rate - 14) * 7,
+        ),
+        hint: "Closer to 14 rpm suggests steadier respiratory rhythm.",
+      },
+      {
+        label: "Snore",
+        value: clampScore(100 - dashboard.average_snore_level * 10),
+        hint: "Lower snore levels generally reduce nighttime interruptions.",
+      },
+      {
+        label: "Recovery",
+        value: estimatedScore ?? 0,
+        hint: "Blended score from breathing rhythm and snore intensity.",
+      },
+    ];
+  }, [dashboard, estimatedScore]);
+
+  const stageData = useMemo(() => {
+    if (!dashboard) {
+      return [];
+    }
+
+    const deep = Math.max(14, Math.min(30, 28 - dashboard.average_snore_level));
+    const rem = Math.max(
+      16,
+      Math.min(30, 22 - Math.abs(dashboard.average_breathing_rate - 14) / 2),
+    );
+    const light = Math.max(35, 100 - deep - rem);
+
+    return [
+      { label: "Light", value: Math.round(light), color: "#A7C6ED" },
+      { label: "Deep", value: Math.round(deep), color: "#4B79BF" },
+      { label: "REM", value: Math.round(rem), color: "#8B86F4" },
+    ];
+  }, [dashboard]);
 
   return (
     <ScreenContainer scrollable>
@@ -133,6 +214,15 @@ export function HomeDashboardScreen() {
             />
           </View>
 
+          <AgapCard className="mt-4">
+            <Text className="text-[11px] uppercase tracking-[1px] text-[#8FAAD2]">
+              Trend Window
+            </Text>
+            <View className="mt-3 self-start">
+              <RangeSelector value={range} onChange={setRange} />
+            </View>
+          </AgapCard>
+
           {latestHighlight ? (
             <AgapCard className="mt-4">
               <Text className="text-base font-semibold text-[#EDF4FF]">
@@ -144,12 +234,29 @@ export function HomeDashboardScreen() {
             </AgapCard>
           ) : null}
 
-          <View className="mt-4">
-            <SleepTrendBars
-              values={trendValues.length ? trendValues : undefined}
-              subtitle="Recent breathing trend from your synced sessions"
-            />
-          </View>
+          <TrendLineChart
+            title="Breathing Stability"
+            values={breathingTrendValues}
+            labels={trendLabels}
+            summary="Track how breathing rhythm changes across recent sessions."
+            annotation={
+              averageTrendBreathing
+                ? `Average ${range}: ${averageTrendBreathing.toFixed(1)} rpm`
+                : undefined
+            }
+          />
+
+          <ComparisonBarChart
+            title="Recovery Snapshot"
+            data={comparisonData}
+            summary="Compare breathing control, snore suppression, and overall recovery signal."
+          />
+
+          <SleepStagePieChart
+            title="Estimated Sleep Stage Mix"
+            data={stageData}
+            summary="Estimated stage distribution based on your latest respiratory and snore averages."
+          />
 
           <View className="mt-5">
             <AgapButton

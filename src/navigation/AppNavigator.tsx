@@ -6,8 +6,11 @@ import { Image } from "react-native";
 import { agapaiLogo } from "../assets/logos";
 import { AdvancedAnalysisInputScreen } from "../screens/AdvancedAnalysisInputScreen";
 import { AdvancedAnalysisLoadingScreen } from "../screens/AdvancedAnalysisLoadingScreen";
+import { CoachScreen } from "../screens/CoachScreen";
 import { HomeDashboardScreen } from "../screens/HomeDashboardScreen";
 import { InsightChatScreen } from "../screens/InsightChatScreen";
+import { OnboardingScreen } from "../screens/OnboardingScreen";
+import { ProfileScreen } from "../screens/ProfileScreen";
 import { SessionDetailScreen } from "../screens/SessionDetailScreen";
 import { SessionHistoryScreen } from "../screens/SessionHistoryScreen";
 import type { MainTabParamList, RootStackParamList } from "./types";
@@ -34,13 +37,13 @@ function MainTabsNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#071633",
+          backgroundColor: "#071836",
           borderTopColor: "#1D3765",
-          height: 68,
+          height: 72,
           paddingBottom: 10,
           paddingTop: 10,
         },
-        tabBarActiveTintColor: "#4A8CFF",
+        tabBarActiveTintColor: "#8CB1E8",
         tabBarInactiveTintColor: "#6F87B4",
         tabBarLabelStyle: {
           fontSize: 11,
@@ -59,8 +62,12 @@ function MainTabsNavigator() {
 
           const iconName =
             route.name === "SessionHistory"
-                ? "time-outline"
-                : "chatbubble-ellipses-outline";
+              ? "time-outline"
+              : route.name === "InsightChat"
+                ? "chatbubble-ellipses-outline"
+                : route.name === "Coach"
+                  ? "sparkles-outline"
+                  : "person-circle-outline";
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -81,6 +88,16 @@ function MainTabsNavigator() {
         component={InsightChatScreen}
         options={{ title: "Insights" }}
       />
+      <Tab.Screen
+        name="Coach"
+        component={CoachScreen}
+        options={{ title: "Coach" }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ title: "Profile" }}
+      />
     </Tab.Navigator>
   );
 }
@@ -98,6 +115,7 @@ export function AppNavigator() {
       >
         <Stack.Screen name="MainTabs" component={MainTabsNavigator} />
         <Stack.Screen name="SessionDetail" component={SessionDetailScreen} />
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen
           name="AdvancedAnalysisInput"
           component={AdvancedAnalysisInputScreen}

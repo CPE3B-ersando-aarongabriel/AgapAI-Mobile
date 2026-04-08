@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, Text, TextInput, View } from "react-native";
-import { SleepTrendBars } from "../components/charts/SleepTrendBars";
+import {
+  type ChartRange,
+  RangeSelector,
+  TrendLineChart,
+} from "../components/charts/InsightCharts";
 import { AgapButton } from "../components/common/AgapButton";
 import { AgapCard } from "../components/common/AgapCard";
 import { AgapHeader } from "../components/common/AgapHeader";
@@ -27,16 +31,36 @@ export function InsightChatScreen() {
   } = useInsights();
   const { dashboard } = useDashboard();
   const [draft, setDraft] = useState("");
+  const [trendRange, setTrendRange] = useState<ChartRange>("week");
   const [activeSuggestionId, setActiveSuggestionId] = useState<string | null>(
     null,
   );
   const messageScrollRef = useRef<ScrollView | null>(null);
 
+  const filteredTrends = useMemo(() => {
+    if (!dashboard?.trends.length) {
+      return [];
+    }
+
+    const windowSize =
+      trendRange === "day" ? 4 : trendRange === "week" ? 7 : 30;
+    return dashboard.trends.slice(-windowSize);
+  }, [dashboard?.trends, trendRange]);
+
   const trendValues = useMemo(
     () =>
-      dashboard?.trends.map((item) => Math.round(item.avg_breathing_rate)) ??
-      [],
-    [dashboard?.trends],
+      filteredTrends.map((item) => Number(item.avg_breathing_rate.toFixed(1))),
+    [filteredTrends],
+  );
+  const trendLabels = useMemo(
+    () =>
+      filteredTrends.map((item) =>
+        new Date(item.date).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        }),
+      ),
+    [filteredTrends],
   );
 
   useEffect(() => {
@@ -120,12 +144,23 @@ export function InsightChatScreen() {
           ))}
         </View>
 
-        <View className="mb-4 mt-1">
-          <SleepTrendBars
-            values={trendValues.length ? trendValues : undefined}
-            subtitle="Recent breathing trend used for contextual coaching"
-          />
+        <View className="mb-2 mt-1">
+          <AgapCard>
+            <Text className="text-[11px] uppercase tracking-[1px] text-[#8FAAD2]">
+              Coaching Trend Window
+            </Text>
+            <View className="mt-3 self-start">
+              <RangeSelector value={trendRange} onChange={setTrendRange} />
+            </View>
+          </AgapCard>
         </View>
+
+        <TrendLineChart
+          title="Contextual Breathing Trend"
+          values={trendValues}
+          labels={trendLabels}
+          summary="This trend is used by the coach to ground responses in recent patterns."
+        />
 
         <ScrollView
           horizontal

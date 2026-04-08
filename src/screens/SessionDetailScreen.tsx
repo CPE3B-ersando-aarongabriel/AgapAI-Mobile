@@ -7,7 +7,13 @@ import {
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { SleepTrendBars } from "../components/charts/SleepTrendBars";
+import {
+  ComparisonBarChart,
+  RangeSelector,
+  SleepStageStackedChart,
+  TrendLineChart,
+  type ChartRange,
+} from "../components/charts/InsightCharts";
 import { AgapButton } from "../components/common/AgapButton";
 import { AgapCard } from "../components/common/AgapCard";
 import { AgapHeader } from "../components/common/AgapHeader";
@@ -53,6 +59,7 @@ export function SessionDetailScreen() {
   const sessionId = route.params?.sessionId;
   const { session, isLoading, error, refresh } = useSessionDetail(sessionId);
   const [section, setSection] = useState<DetailSection>("overview");
+  const [sampleRange, setSampleRange] = useState<ChartRange>("week");
 
   const isActiveSession = session?.status === "active";
   const {
@@ -78,14 +85,6 @@ export function SessionDetailScreen() {
 
   const summaryMetrics = session?.summaryMetrics;
 
-  const normalizedMicValues = useMemo(
-    () => samples.slice(-14).map((item) => clamp0To100(item.micRaw)),
-    [samples],
-  );
-  const breathingValues = useMemo(
-    () => samples.slice(-14).map((item) => Math.max(0, item.breathingRate)),
-    [samples],
-  );
   const temperatureValues = useMemo(
     () => samples.slice(-14).map((item) => item.temperature),
     [samples],
@@ -107,6 +106,109 @@ export function SessionDetailScreen() {
   }, [samples]);
 
   const riskLevel = session?.latestPreAnalysis?.risk_level ?? "medium";
+
+  const slicedSamples = useMemo(() => {
+    const windowSize = sampleRange === "day" ? 24 : sampleRange === "week" ? 72 : 168;
+    return samples.slice(-windowSize);
+  }, [sampleRange, samples]);
+
+  const sampleLabels = useMemo(
+    () =>
+      slicedSamples.map((sample, index) => {
+        const date = sample.recordedAt;
+        if (sampleRange === "day") {
+          return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        }
+
+        if (sampleRange === "week") {
+          return date.toLocaleDateString(undefined, { weekday: "short" });
+        }
+
+        return index % 2 === 0
+          ? date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+          : "";
+      }),
+    [sampleRange, slicedSamples],
+  );
+
+  const sampleMicValues = useMemo(
+    () => slicedSamples.map((item) => clamp0To100(item.micRaw)),
+    [slicedSamples],
+  );
+  const sampleBreathingValues = useMemo(
+    () => slicedSamples.map((item) => Math.max(0, item.breathingRate)),
+    [slicedSamples],
+  );
+  const overviewComparisons = useMemo(() => {
+    if (!summaryMetrics) {
+      return [];
+    }
+
+    const breathingScore = clamp0To100(
+      100 - Math.abs((summaryMetrics.average_breathing_rate ?? 14) - 14) * 8,
+    );
+    const snoreScore = clamp0To100(
+      100 - (summaryMetrics.average_snore_level ?? 0) * 8,
+    );
+    const comfortBase =
+      ((summaryMetrics.average_temperature ?? 23) +
+        (summaryMetrics.average_humidity ?? 50) / 2) /
+      2;
+    const comfortScore = clamp0To100(100 - Math.abs(comfortBase - 24) * 4);
+
+    return [
+      {
+        label: "Breath",
+        value: breathingScore,
+        hint: "Stability around 14 rpm generally indicates calmer cycles.",
+      },
+      {
+        label: "Snore",
+        value: snoreScore,
+        hint: "Lower snore score can reduce sleep fragmentation.",
+      },
+      {
+        label: "Comfort",
+        value: comfortScore,
+        hint: "Balanced temperature and humidity support deeper sleep.",
+      },
+    ];
+  }, [summaryMetrics]);
+
+  const stageStackData = useMemo(() => {
+    if (!samples.length) {
+      return [];
+    }
+
+    const windows = [
+      { label: "W1", start: 0.0, end: 0.25 },
+      { label: "W2", start: 0.25, end: 0.5 },
+      { label: "W3", start: 0.5, end: 0.75 },
+      { label: "W4", start: 0.75, end: 1.0 },
+    ];
+
+    return windows.map((window) => {
+      const from = Math.floor(samples.length * window.start);
+      const to = Math.max(from + 1, Math.floor(samples.length * window.end));
+      const windowSamples = samples.slice(from, to);
+      const avgBreathing =
+        windowSamples.reduce((sum, item) => sum + item.breathingRate, 0) /
+        windowSamples.length;
+      const avgMic =
+        windowSamples.reduce((sum, item) => sum + item.micRaw, 0) /
+        windowSamples.length;
+      const deep = Math.max(0.8, 2.4 - avgMic / 65);
+      const rem = Math.max(0.7, 1.9 - Math.abs(avgBreathing - 14) / 9);
+      const light = Math.max(1.2, 6.5 / windows.length - deep - rem);
+
+      return {
+        label: window.label,
+        light: Number(light.toFixed(1)),
+        deep: Number(deep.toFixed(1)),
+        rem: Number(rem.toFixed(1)),
+      };
+    });
+  }, [samples]);
 
   return (
     <ScreenContainer scrollable>
@@ -206,6 +308,22 @@ export function SessionDetailScreen() {
                   )}
                 />
               </View>
+
+              {overviewComparisons.length ? (
+                <ComparisonBarChart
+                  title="Session Balance"
+                  data={overviewComparisons}
+                  summary="Tap bars to inspect breathing, snore, and comfort contributors."
+                />
+              ) : null}
+
+              {stageStackData.length ? (
+                <SleepStageStackedChart
+                  title="Estimated Stage Profile"
+                  data={stageStackData}
+                  summary="Estimated light/deep/REM composition across this session timeline."
+                />
+              ) : null}
 
               <BreathingPatternCard
                 pattern={
@@ -316,28 +434,74 @@ export function SessionDetailScreen() {
 
               {!isSamplesLoading && !samplesError && samples.length ? (
                 <>
-                  <SleepTrendBars
-                    values={normalizedMicValues}
-                    subtitle="Mic raw intensity trend (normalized 0-100)"
+                  <AgapCard>
+                    <Text className="text-[11px] uppercase tracking-[1px] text-[#8FAAD2]">
+                      Sample Window
+                    </Text>
+                    <View className="mt-3 self-start">
+                      <RangeSelector value={sampleRange} onChange={setSampleRange} />
+                    </View>
+                  </AgapCard>
+
+                  <TrendLineChart
+                    title="Mic Intensity"
+                    values={sampleMicValues}
+                    labels={sampleLabels}
+                    summary="Normalized microphone intensity across selected sample range."
+                    annotation={`Presence detected at ${presenceDetectedCount} points`}
                   />
-                  <View className="mt-3">
-                    <SleepTrendBars
-                      values={breathingValues}
-                      subtitle="Breathing rate trend"
-                    />
-                  </View>
-                  <View className="mt-3">
-                    <SleepTrendBars
-                      values={temperatureValues}
-                      subtitle="Temperature trend"
-                    />
-                  </View>
-                  <View className="mt-3">
-                    <SleepTrendBars
-                      values={humidityValues}
-                      subtitle="Humidity trend"
-                    />
-                  </View>
+
+                  <TrendLineChart
+                    title="Breathing Rate"
+                    values={sampleBreathingValues}
+                    labels={sampleLabels}
+                    summary="Breathing rhythm sampled over the selected session window."
+                    annotation={
+                      avgMovementLevel !== null
+                        ? `Average movement level ${avgMovementLevel.toFixed(2)}`
+                        : undefined
+                    }
+                  />
+
+                  <ComparisonBarChart
+                    title="Environment Snapshot"
+                    data={[
+                      {
+                        label: "Temp",
+                        value:
+                          temperatureValues.length > 0
+                            ? Math.max(
+                                0,
+                                Math.min(
+                                  100,
+                                  (temperatureValues[temperatureValues.length - 1] / 35) * 100,
+                                ),
+                              )
+                            : 0,
+                        hint: "Normalized latest room temperature reading.",
+                      },
+                      {
+                        label: "Humidity",
+                        value:
+                          humidityValues.length > 0
+                            ? Math.max(
+                                0,
+                                Math.min(100, humidityValues[humidityValues.length - 1]),
+                              )
+                            : 0,
+                        hint: "Latest humidity percentage from sample stream.",
+                      },
+                      {
+                        label: "Motion",
+                        value:
+                          avgMovementLevel !== null
+                            ? Math.max(0, Math.min(100, avgMovementLevel * 10))
+                            : 0,
+                        hint: "Movement level normalized to 0-100 scale.",
+                      },
+                    ]}
+                    summary="Current environment and motion indicators from sampled data."
+                  />
 
                   <AgapCard className="mt-4">
                     <Text className="text-[11px] uppercase tracking-[1px] text-[#8FA6CC]">

@@ -14,13 +14,15 @@ export function QuickPromptChip({
   return (
     <Pressable
       onPress={onPress}
-      className={`mr-2 rounded-full border px-3 py-2 ${
+      className={`mr-2 min-h-[38px] rounded-full border px-3.5 py-2 ${
         isActive
-          ? "border-[#5F9DFF] bg-[#214883]"
-          : "border-[#2F4D7D] bg-[#122C56]"
+          ? "border-[#6FA7EE] bg-[#2B4E84]"
+          : "border-[#2F4D7D] bg-[#132D58]"
       }`}
+      accessibilityRole="button"
+      accessibilityLabel={label}
     >
-      <Text className="text-xs text-[#D8E6FF]">{label}</Text>
+      <Text className="text-xs font-medium text-[#D8E6FF]">{label}</Text>
     </Pressable>
   );
 }

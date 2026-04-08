@@ -23,6 +23,7 @@ import { useAppStore } from "../store/appStore";
 import type { SessionSummary } from "../types/session";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+type SessionRange = "recent" | "month" | "all";
 
 function estimateSessionScore(session: SessionSummary): number | undefined {
   const metrics = session.summaryMetrics;
@@ -101,6 +102,7 @@ export function SessionHistoryScreen() {
     loadMore,
   } = useSessionHistory({ pageSize: 8, defaultDeviceId: sessionDeviceFilter });
   const [filterInput, setFilterInput] = useState(sessionDeviceFilter);
+  const [sessionRange, setSessionRange] = useState<SessionRange>("recent");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -121,6 +123,20 @@ export function SessionHistoryScreen() {
       year: "numeric",
     });
   }, [sessions]);
+
+  const visibleSessions = useMemo(() => {
+    if (sessionRange === "all") {
+      return sessions;
+    }
+
+    const now = new Date();
+    const maxAgeDays = sessionRange === "recent" ? 10 : 31;
+    return sessions.filter((session) => {
+      const diffDays =
+        (now.getTime() - session.startedAt.getTime()) / (1000 * 60 * 60 * 24);
+      return diffDays <= maxAgeDays;
+    });
+  }, [sessionRange, sessions]);
 
   const renderItem = ({ item }: { item: SessionSummary }) => {
     const score = estimateSessionScore(item);
@@ -178,8 +194,32 @@ export function SessionHistoryScreen() {
           {monthLabel}
         </Text>
         <Text className="text-[11px] uppercase tracking-[1px] text-[#8EA8CF]">
-          {sessions.length}/{total}
+          {visibleSessions.length}/{total}
         </Text>
+      </View>
+
+      <View className="mb-3 flex-row gap-2">
+        {(
+          [
+            { value: "recent", label: "10 days" },
+            { value: "month", label: "1 month" },
+            { value: "all", label: "All" },
+          ] as const
+        ).map((option) => (
+          <Pressable
+            key={option.value}
+            onPress={() => setSessionRange(option.value)}
+            className={`rounded-full border px-3 py-1.5 ${
+              sessionRange === option.value
+                ? "border-[#6EA4E8] bg-[#2B4E84]"
+                : "border-[#32527E] bg-[#14305C]"
+            }`}
+          >
+            <Text className="text-[11px] font-medium text-[#D8E6FF]">
+              {option.label}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       {isLoading ? <LoadingState label="Fetching session history..." /> : null}
@@ -188,7 +228,7 @@ export function SessionHistoryScreen() {
         <ErrorState message={error.message} onRetry={() => void refresh()} />
       ) : null}
 
-      {!isLoading && !error && !sessions.length ? (
+      {!isLoading && !error && !visibleSessions.length ? (
         <EmptyState
           title="No sessions available"
           description="Try a valid device id, then refresh. The list now uses device-scoped sessions for better reliability."
@@ -197,10 +237,10 @@ export function SessionHistoryScreen() {
         />
       ) : null}
 
-      {!isLoading && !error && sessions.length ? (
+      {!isLoading && !error && visibleSessions.length ? (
         <FlatList
           className="flex-1"
-          data={sessions}
+          data={visibleSessions}
           keyExtractor={(item) => item.sessionId}
           renderItem={renderItem}
           refreshControl={

@@ -6,10 +6,7 @@ type AgapLogoProps = {
   withBadge?: boolean;
 };
 
-export function AgapLogo({
-  size = 28,
-  withBadge = false,
-}: AgapLogoProps) {
+export function AgapLogo({ size = 28, withBadge = false }: AgapLogoProps) {
   const badgeSize = size + 10;
 
   const image = (
